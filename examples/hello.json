@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "name": "hello",
+  "description": "Validate a name and render a greeting.",
+  "defaults": {
+    "punctuation": "!"
+  },
+  "steps": [
+    {
+      "id": "require_name",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.name }}",
+        "operator": "not_empty",
+        "message": "input.name is required"
+      }
+    },
+    {
+      "id": "greeting",
+      "uses": "set",
+      "with": {
+        "message": "Hello, {{ input.name }}{{ defaults.punctuation }}",
+        "name": "{{ input.name }}"
+      }
+    }
+  ],
+  "output": {
+    "message": "{{ steps.greeting.message }}",
+    "name": "{{ steps.greeting.name }}"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "name": "release-note",
+  "description": "Validate release input and create a small announcement payload.",
+  "defaults": {
+    "channel": "engineering"
+  },
+  "steps": [
+    {
+      "id": "require_version",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.version }}",
+        "operator": "not_empty",
+        "message": "input.version is required"
+      }
+    },
+    {
+      "id": "require_changes",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.changes }}",
+        "operator": "not_empty",
+        "message": "input.changes must not be empty"
+      }
+    },
+    {
+      "id": "announcement",
+      "uses": "set",
+      "with": {
+        "channel": "{{ defaults.channel }}",
+        "headline": "Release {{ input.version }} is ready",
+        "changes": "{{ input.changes }}"
+      }
+    }
+  ],
+  "output": "{{ steps.announcement }}"
+}

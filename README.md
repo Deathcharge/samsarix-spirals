@@ -24,7 +24,7 @@ UI, server, scheduler, retries, connectors, parallelism, or persistence in this 
 Python 3.11 or newer is required.
 
 ```console
-git clone https://github.com/Deathcharge/helix-spirals.git
+git clone https://github.com/Deathcharge/samsarix-spirals.git
 cd helix-spirals
 python -m venv .venv
 .venv\Scripts\python -m pip install -e .

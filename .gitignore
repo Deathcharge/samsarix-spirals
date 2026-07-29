@@ -1,7 +1,16 @@
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
 build/
 dist/
-*.egg-info/
-.venv/
+htmlcov/
+
+# Local inputs may contain customer data. Commit examples deliberately.
 .env
+.env.*
+*.local.json

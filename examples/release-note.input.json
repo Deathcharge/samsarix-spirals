@@ -1,0 +1,7 @@
+{
+  "version": "0.1.0",
+  "changes": [
+    "bounded workflow validation",
+    "deterministic local execution"
+  ]
+}

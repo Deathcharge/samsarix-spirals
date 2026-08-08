@@ -122,3 +122,44 @@ environment variables, and does not add time, randomness, or identifiers to resu
 Given the same workflow, input, and run limit, its JSON value result is the same.
 
 Object key order is not semantic. The CLI sorts keys when serializing its result.
+
+## Regression suite format
+
+The `test` command accepts a workflow and a separate suite document. Suite version `1`
+has this shape:
+
+```json
+{
+  "suite_version": 1,
+  "name": "release contract",
+  "cases": [
+    {
+      "name": "approved release",
+      "input": {"approved": true},
+      "expect": {"output": {"publish": true}}
+    },
+    {
+      "name": "unapproved release",
+      "input": {"approved": false},
+      "expect": {
+        "error": {
+          "step_id": "require_approval",
+          "message_contains": "approval is required"
+        }
+      }
+    }
+  ]
+}
+```
+
+A suite contains between 1 and 1,000 uniquely named cases. Each case has an optional
+`input` object and exactly one expectation:
+
+- `output` compares the workflow's final JSON value using exact JSON equality;
+- `error` expects execution to fail and can constrain `step_id`, `message_contains`,
+  both, or neither.
+
+Unknown fields are rejected. Suite files use the same 1 MiB, UTF-8, unique-key,
+finite-number, nesting, string, collection, and total-value limits as workflow and input
+documents. A suite runs all cases even after a mismatch. Human and JSON reports avoid
+echoing fixture values.

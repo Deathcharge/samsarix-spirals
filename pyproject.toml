@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "samsarix-spirals"
 version = "0.1.0"
-description = "A deterministic local runner for small, checked-in JSON workflows"
+description = "Deterministic JSON workflow contracts for local development and CI"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MPL-2.0"
@@ -17,7 +17,7 @@ authors = [
 maintainers = [
   { name = "Samsarix LLC", email = "support@samsarix.com" },
 ]
-keywords = ["automation", "cli", "json", "workflow"]
+keywords = ["automation", "ci", "cli", "contract-testing", "json", "workflow"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",

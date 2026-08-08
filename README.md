@@ -1,8 +1,9 @@
 # Samsarix Spirals
 
-Samsarix Spirals is a small, deterministic runner for JSON workflows that you can review,
-test, and keep beside your code. It is aimed at local validation and data shaping—not
-hosted automation, third-party integrations, or durable distributed orchestration.
+Samsarix Spirals is a deterministic contract runner for JSON workflows that you can
+review, regression-test, and keep beside your code. It is aimed at release gates,
+agent-output contracts, configuration checks, and local data shaping—not hosted
+automation or durable distributed orchestration.
 
 Version `0.1.0` is a source release candidate. The package is not currently published
 on PyPI, so install it from a checkout or a locally built wheel.
@@ -11,13 +12,15 @@ on PyPI, so install it from a checkout or a locally built wheel.
 
 - Validates a versioned JSON workflow before execution.
 - Runs `set` and `assert` steps in a fixed order.
+- Runs checked-in suites that prove expected outputs and expected failures.
 - Renders values from `input`, `defaults`, and completed `steps`.
 - Emits deterministic JSON with no timestamps, random IDs, or hidden state.
 - Performs no network requests, subprocess execution, credential storage, or imports
   from another Samsarix repository.
 
-Samsarix Spirals is not a Zapier, n8n, Temporal, Prefect, or Dagster replacement. It has no
-UI, server, scheduler, retries, connectors, parallelism, or persistence in this release.
+Samsarix Spirals is not a Zapier, n8n, Temporal, Prefect, Dagster, Dagger, or CUE
+replacement. Its advantage is a deliberately small, hermetic contract surface: no UI,
+server, scheduler, connectors, code execution, network access, or persistence.
 
 ## Install from a checkout
 
@@ -25,7 +28,7 @@ Python 3.11 or newer is required.
 
 ```console
 git clone https://github.com/Deathcharge/samsarix-spirals.git
-cd helix-spirals
+cd samsarix-spirals
 python -m venv .venv
 .venv\Scripts\python -m pip install -e .
 ```
@@ -37,6 +40,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.venv\Scripts\python`.
 ```console
 .venv\Scripts\samsarix-spirals validate examples/hello.json
 .venv\Scripts\samsarix-spirals run examples/hello.json --input examples/hello.input.json
+.venv\Scripts\samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json
 ```
 
 The output's `output` field is:
@@ -61,6 +65,21 @@ echo {"name":"Ada"} | .venv\Scripts\samsarix-spirals run examples/hello.json --i
 ```
 
 PowerShell users should prefer `'{"name":"Ada"}' | ...` so quoting is preserved.
+
+## Regression suites
+
+A suite stores named inputs beside exact expected outputs or expected execution errors.
+The `test` command runs every case, reports all mismatches, and exits `1` if the contract
+has changed. Reports describe the mismatch without echoing input or output values, which
+reduces accidental disclosure of fixture data in CI logs.
+
+```console
+samsarix-spirals test workflow.json workflow.suite.json
+samsarix-spirals test workflow.json workflow.suite.json --json --compact
+```
+
+See [`examples/release-policy.suite.json`](examples/release-policy.suite.json) for a
+release approval gate with both successful and rejected cases.
 
 ## Python API
 
@@ -87,6 +106,7 @@ output, and later steps do not run.
 ## Documentation
 
 - [Workflow format](docs/WORKFLOW_FORMAT.md)
+- [Competitive position and use cases](docs/COMPETITIVE_POSITIONING.md)
 - [Productization record](docs/PRODUCTIZATION.md)
 - [Release process](docs/RELEASING.md)
 - [Security policy](SECURITY.md)
@@ -94,14 +114,15 @@ output, and later steps do not run.
 
 ## Project status and release boundary
 
-The 0.1 core journey—install, validate, run, inspect output—has local automated coverage.
+The core journey—install, validate, run, regression-test, inspect output—has local
+automated coverage.
 Before publishing, a maintainer still needs to observe the GitHub Actions matrix on the
 target commit, confirm the distribution name is still available, create the tag, and
 publish through an owned package index account. Those external steps are intentionally
 not claimed as complete here.
 
-The GitHub repository currently retains its legacy `helix-spirals` slug. The product,
-Python distribution, import package, and console command use the Samsarix name.
+The repository, product, Python distribution, import package, and console command now use
+the Samsarix identity.
 
 ## License
 

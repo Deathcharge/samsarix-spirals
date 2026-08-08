@@ -107,3 +107,54 @@ def test_version_and_required_command(capsys) -> None:
     with pytest.raises(SystemExit) as missing:
         main([])
     assert missing.value.code == 2
+
+
+def test_workflow_test_command_reports_human_and_json_results(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    suite = tmp_path / "suite.json"
+    write_workflow(workflow)
+    suite.write_text(
+        json.dumps(
+            {
+                "suite_version": 1,
+                "name": "greetings",
+                "cases": [
+                    {
+                        "name": "greets Ada",
+                        "input": {"name": "Ada"},
+                        "expect": {"output": {"message": "Hello Ada"}},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["test", str(workflow), str(suite)]) == 0
+    assert capsys.readouterr().out == "PASS greets Ada\nsuite greetings: 1 passed, 0 failed\n"
+
+    assert main(["test", str(workflow), str(suite), "--json", "--compact"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["successful"] is True
+    assert result["passed"] == 1
+
+
+def test_workflow_test_command_returns_one_for_contract_failure(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    suite = tmp_path / "suite.json"
+    write_workflow(workflow)
+    suite.write_text(
+        json.dumps(
+            {
+                "suite_version": 1,
+                "name": "broken",
+                "cases": [{"name": "mismatch", "input": {"name": "Ada"}, "expect": {"output": {}}}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["test", str(workflow), str(suite)]) == 1
+    captured = capsys.readouterr()
+    assert "FAIL mismatch" in captured.out
+    assert "1 failed" in captured.out

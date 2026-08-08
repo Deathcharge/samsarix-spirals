@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "name": "release-policy",
+  "description": "Gate and normalize release metadata before a CI publish job.",
+  "defaults": {
+    "channel": "stable"
+  },
+  "steps": [
+    {
+      "id": "require_version",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.version }}",
+        "operator": "not_empty",
+        "message": "version is required"
+      }
+    },
+    {
+      "id": "require_commit",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.commit }}",
+        "operator": "not_empty",
+        "message": "commit is required"
+      }
+    },
+    {
+      "id": "require_approval",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.approved }}",
+        "operator": "equals",
+        "expected": true,
+        "message": "release approval is required"
+      }
+    },
+    {
+      "id": "manifest",
+      "uses": "set",
+      "with": {
+        "version": "{{ input.version }}",
+        "commit": "{{ input.commit }}",
+        "channel": "{{ defaults.channel }}",
+        "publish": true
+      }
+    }
+  ],
+  "output": "{{ steps.manifest }}"
+}

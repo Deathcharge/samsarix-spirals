@@ -59,3 +59,4 @@ jobs:
       - run: /tmp/samsarix-spirals-smoke/bin/python -m pip install --no-deps dist/*.whl
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals validate examples/hello.json
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals run examples/hello.json --input examples/hello.input.json --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json --json --compact

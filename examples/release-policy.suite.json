@@ -1,0 +1,50 @@
+{
+  "suite_version": 1,
+  "name": "release policy contract",
+  "cases": [
+    {
+      "name": "approved stable release",
+      "input": {
+        "version": "1.4.0",
+        "commit": "abc123",
+        "approved": true
+      },
+      "expect": {
+        "output": {
+          "version": "1.4.0",
+          "commit": "abc123",
+          "channel": "stable",
+          "publish": true
+        }
+      }
+    },
+    {
+      "name": "unapproved release is rejected",
+      "input": {
+        "version": "1.4.0",
+        "commit": "abc123",
+        "approved": false
+      },
+      "expect": {
+        "error": {
+          "step_id": "require_approval",
+          "message_contains": "release approval is required"
+        }
+      }
+    },
+    {
+      "name": "missing version is rejected",
+      "input": {
+        "version": "",
+        "commit": "abc123",
+        "approved": true
+      },
+      "expect": {
+        "error": {
+          "step_id": "require_version",
+          "message_contains": "version is required"
+        }
+      }
+    }
+  ]
+}

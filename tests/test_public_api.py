@@ -12,9 +12,13 @@ def test_public_api_is_small_and_versioned() -> None:
         "RunResult",
         "Step",
         "StepResult",
+        "SuiteResult",
         "Workflow",
         "WorkflowExecutionError",
         "WorkflowValidationError",
+        "WorkflowSuite",
+        "load_suite",
         "load_workflow",
         "run_workflow",
+        "run_suite",
     }

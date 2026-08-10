@@ -22,6 +22,7 @@ from .model import (
     parse_json_object_bytes,
 )
 from .runner import run_workflow
+from .suite import load_suite, run_suite
 
 STARTER_WORKFLOW: dict[str, JsonValue] = {
     "schema_version": 1,
@@ -82,6 +83,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--compact", action="store_true", help="emit compact JSON")
 
+    test = commands.add_parser("test", help="run a workflow regression suite")
+    test.add_argument("workflow", type=Path)
+    test.add_argument("suite", type=Path)
+    test.add_argument("--json", action="store_true", help="emit a machine-readable report")
+    test.add_argument("--compact", action="store_true", help="compact the JSON report")
+
     init = commands.add_parser("init", help="write a starter workflow without overwriting files")
     init.add_argument("path", type=Path)
     return parser
@@ -99,10 +106,33 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "run":
             workflow = load_workflow(args.workflow)
             input_data = _load_input(args.input)
-            result = run_workflow(workflow, input_data, max_steps=args.max_steps)
+            run_result = run_workflow(workflow, input_data, max_steps=args.max_steps)
             indent = None if args.compact else 2
-            print(json.dumps(result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True))
+            print(
+                json.dumps(run_result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True)
+            )
             return 0
+        if args.command == "test":
+            workflow = load_workflow(args.workflow)
+            suite = load_suite(args.suite)
+            suite_result = run_suite(workflow, suite)
+            if args.json:
+                indent = None if args.compact else 2
+                print(
+                    json.dumps(
+                        suite_result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True
+                    )
+                )
+            else:
+                for case in suite_result.cases:
+                    status = "PASS" if case.passed else "FAIL"
+                    detail = f": {case.detail}" if case.detail else ""
+                    print(f"{status} {case.name}{detail}")
+                print(
+                    f"suite {suite_result.suite}: "
+                    f"{suite_result.passed} passed, {suite_result.failed} failed"
+                )
+            return 0 if suite_result.successful else 1
     except WorkflowExecutionError as error:
         print(f"execution error: {error}", file=sys.stderr)
         return 1

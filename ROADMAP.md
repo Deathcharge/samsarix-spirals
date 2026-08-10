@@ -1,43 +1,83 @@
 # Samsarix Spirals roadmap
 
-This roadmap separates four gates: merge, release, publication, and flagship adoption. Passing one does not imply the next.
+This roadmap separates code completion, release, publication, and real adoption. Passing
+one gate does not imply the next.
 
-## Product boundary
+## Product position
 
-Portfolio role: **experiment or learning project**. Keep this as an evidence-producing experiment or reference. Promotion to a supported product requires a real consumer and a measured advantage over the simpler alternative.
-Planned repository identity: `Deathcharge/samsarix-spirals` (ready-reference).
+Samsarix Spirals is a **hermetic JSON workflow contract runner** for developers, platform
+teams, and AI-agent builders. It should make small data-shaping and policy flows easier to
+review and safer to execute than an ad hoc script, while remaining dramatically smaller
+than a general orchestrator.
 
-Current disposition: Merge as a labeled reference or experiment; do not imply production support.
+The product earns its place only when all of these remain true:
 
-## Stabilize the productized default
+- a workflow and its regression suite fit naturally beside application code;
+- identical workflow and input JSON values produce identical results;
+- execution needs no daemon, container runtime, credentials, network, subprocess, or
+  dynamically loaded code;
+- failure is bounded, attributable to a step, and useful in CI;
+- the workflow is clearer to its owners than the equivalent bespoke script.
 
-- Keep the default branch buildable from a clean checkout and preserve exact-head CI evidence.
-- Keep Samsarix LLC branding, package identity, license metadata, and compatibility aliases internally consistent.
-- Preserve the pre-productization default under a rollback ref before merging; do not delete legacy history.
-- Review priority: Prove one real schema-v1 consumer.
-- Review priority: otherwise tag a reviewed reference snapshot and freeze feature investment.
+See [the competitive position](docs/COMPETITIVE_POSITIONING.md) for the evidence behind
+this boundary.
 
-## Release candidate
+## Flagship use cases
 
-- Define a falsifiable evaluation against a simpler baseline.
-- Publish fixtures, limits, and reproducible results without overstating conclusions.
-- Tag and freeze a useful reference if the experiment does not earn adoption.
+1. **Release manifest gates** — validate approval and required metadata, then emit a
+   normalized manifest for a later publishing job.
+2. **AI-output contracts** — turn untrusted structured model output into a bounded,
+   regression-tested deterministic value before another system consumes it.
+3. **Repository policy fixtures** — keep configuration and metadata expectations in
+   reviewable JSON with positive and negative cases.
+4. **Portable data-shaping checks** — produce the same small JSON artifact on a laptop,
+   pre-commit hook, and CI runner without provider-specific syntax.
 
-Current hardening backlog:
+## Milestones
 
-- Only `set` and `assert`; many users can express the same job directly in tests or a short script.
-- A new workflow schema creates another compatibility contract in an already crowded orchestration portfolio.
-- No consumer, published JSON Schema, external adoption, release, or migration path from the removed prototype.
-- The deletion-heavy PR needs careful legal/history review despite the superior direction.
-- Repository slug remains Helix-named while distribution/import/CLI use Samsarix.
+### 0.2 — Contract suites
 
-## Samsarix adoption
+- [x] Versioned suite files with named inputs.
+- [x] Exact-output and expected-error assertions.
+- [x] Human and machine-readable reports with CI exit behavior.
+- [x] A realistic release-policy example.
+- [ ] Publish JSON Schemas for workflows and suites.
+- [ ] Emit JUnit XML for native CI test reporting.
 
-- Define a public API, event, schema, artifact, or deployment contract before connecting to Samsarix Unified.
-- Add a consumer-owned contract fixture covering authentication, privacy, limits, errors, and version compatibility.
-- Make one implementation canonical; remove or freeze duplicate behavior only after parity and rollback are proven.
-- Record an owner, support level, compatibility window, and measurable adoption signal.
+### 0.3 — Useful deterministic shaping
 
-## Completion evidence
+- Add a small, orthogonal operation set for object merge, key selection, list mapping,
+  filtering, and string normalization without arbitrary expressions.
+- Add an `explain` command that shows dependencies and referenced input paths without
+  executing the workflow.
+- Define compatibility and deprecation rules for every schema-visible operation.
+- Prove agent-output and repository-policy examples with adversarial fixtures.
 
-A milestone is complete only when its exact commit, commands and results, artifact digest, consumer or deployment, and rollback path are recorded in a pull request or release record. README claims must not exceed that evidence.
+### 0.4 — Repository adoption
+
+- Ship a pinned GitHub Action and documented pre-commit integration.
+- Add stable SARIF or annotation output for step-scoped failures.
+- Publish signed distributions and an SBOM through an owned package-index account.
+- Measure startup time, maximum-memory behavior, and fixture-suite throughput.
+
+### 1.0 — Supported contract
+
+- Freeze schema version 1 and its compatibility window.
+- Publish a support policy and migration fixtures for schema version changes.
+- Complete an independent security review of all parsing and amplification limits.
+- Provide a rollback-tested release and incident process.
+
+## Adoption gates
+
+Do not describe Samsarix Spirals as production-ready until evidence shows:
+
+- at least three independently owned repositories run it in CI;
+- at least one flagship consumer has 30 consecutive days of successful contract checks;
+- maintainers record 100 real workflow-suite executions with no nondeterministic result;
+- at least one consumer demonstrates that a reviewed workflow is clearer or safer than
+  its prior script using a written before/after evaluation;
+- release artifacts, checksums, exact-head CI, support ownership, and rollback steps are
+  recorded for the published version.
+
+If those gates are not met, keep the project an honest alpha rather than expanding into
+connectors, scheduling, hosted execution, or another general orchestration platform.

@@ -235,6 +235,15 @@ def validate_input_object(document: Mapping[str, object]) -> dict[str, JsonValue
     return cast(dict[str, JsonValue], copy.deepcopy(dict(document)))
 
 
+def validate_json_value(value: object) -> JsonValue:
+    """Validate and detach an API-provided JSON value."""
+    issues: list[str] = []
+    _validate_json_value(value, "$", issues)
+    if issues:
+        raise WorkflowValidationError(issues)
+    return cast(JsonValue, copy.deepcopy(value))
+
+
 def _read_bounded(path: Path) -> bytes:
     try:
         with path.open("rb") as handle:

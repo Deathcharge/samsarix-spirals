@@ -5,6 +5,13 @@ use semantic versioning while the public API remains pre-1.0.
 
 ## [Unreleased]
 
+### Added
+
+- Versioned, bounded workflow regression suites with exact-output and expected-error
+  contracts through the Python API and `samsarix-spirals test` command.
+- A release-policy example that demonstrates a practical CI approval gate.
+- Competitive positioning, flagship use cases, and measurable adoption gates.
+
 ### Changed
 
 - Renamed the product, distribution, import package, CLI, and public base exception from

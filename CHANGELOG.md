@@ -17,6 +17,8 @@ use semantic versioning while the public API remains pre-1.0.
   top-level output allowlists.
 - An agent tool-result example with approval, required-field, and adversarial extra-field
   regression cases.
+- A value-free `explain` API and CLI command for input/default path inventory and direct
+  step-dependency review without workflow execution.
 
 ### Changed
 

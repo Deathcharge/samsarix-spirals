@@ -167,6 +167,25 @@ Given the same workflow, input, and run limit, its JSON value result is the same
 
 Object key order is not semantic. The CLI sorts keys when serializing its result.
 
+## Static explanations
+
+`samsarix-spirals explain WORKFLOW` validates a workflow and emits an `explain_version`
+`1` JSON document without rendering templates or executing steps. It includes:
+
+- the lexicographically sorted `input_paths` and `default_paths` referenced anywhere;
+- each step's operation, direct prior-step dependencies, and direct input/default paths;
+- the final output's direct dependencies and paths.
+
+Paths preserve their template spelling, such as `input.items.0.name`. A reference to a
+whole root is reported as `input` or `defaults`. Dependencies are step IDs, not workflow
+values. When a workflow omits `output`, the explanation records the last step as the
+implicit output dependency.
+
+The report intentionally excludes defaults, inputs, resolved output, and other values.
+This makes it suitable for code-review and inventory tooling, but it does not prove that
+runtime input will contain every reported path; regression suites remain the executable
+contract.
+
 ## Regression suite format
 
 The `test` command accepts a workflow and a separate suite document. Suite version `1`

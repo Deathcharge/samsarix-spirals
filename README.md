@@ -96,6 +96,9 @@ release approval gate with both successful and rejected cases.
 that an approved agent result is enriched, restricted to an explicit key allowlist, and
 rejected when required output is absent. Extra reasoning and credential-shaped fields
 never reach the workflow output.
+[`examples/repository-policy.suite.json`](examples/repository-policy.suite.json) models a
+production-repository security baseline and includes adversarial boolean/numeric,
+missing-field, public-visibility, and secret-shaped extra-field fixtures.
 
 ## JSON Schemas and CI reports
 
@@ -145,6 +148,7 @@ output, and later steps do not run.
 ## Documentation
 
 - [Workflow format](docs/WORKFLOW_FORMAT.md)
+- [Compatibility and deprecation policy](docs/COMPATIBILITY.md)
 - [Competitive position and use cases](docs/COMPETITIVE_POSITIONING.md)
 - [Productization record](docs/PRODUCTIZATION.md)
 - [Release process](docs/RELEASING.md)

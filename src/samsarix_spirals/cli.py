@@ -22,7 +22,8 @@ from .model import (
     parse_json_object_bytes,
 )
 from .runner import run_workflow
-from .suite import load_suite, run_suite
+from .schema import SCHEMA_NAMES, get_schema
+from .suite import load_suite, run_suite, suite_result_to_junit_xml
 
 STARTER_WORKFLOW: dict[str, JsonValue] = {
     "schema_version": 1,
@@ -86,8 +87,14 @@ def build_parser() -> argparse.ArgumentParser:
     test = commands.add_parser("test", help="run a workflow regression suite")
     test.add_argument("workflow", type=Path)
     test.add_argument("suite", type=Path)
-    test.add_argument("--json", action="store_true", help="emit a machine-readable report")
+    report = test.add_mutually_exclusive_group()
+    report.add_argument("--json", action="store_true", help="emit a machine-readable report")
+    report.add_argument("--junit", action="store_true", help="emit deterministic JUnit XML")
     test.add_argument("--compact", action="store_true", help="compact the JSON report")
+
+    schema = commands.add_parser("schema", help="print a bundled JSON Schema")
+    schema.add_argument("kind", choices=SCHEMA_NAMES)
+    schema.add_argument("--compact", action="store_true", help="emit compact JSON")
 
     init = commands.add_parser("init", help="write a starter workflow without overwriting files")
     init.add_argument("path", type=Path)
@@ -103,6 +110,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "init":
             return _init_workflow(args.path)
+        if args.command == "schema":
+            indent = None if args.compact else 2
+            print(
+                json.dumps(get_schema(args.kind), ensure_ascii=False, indent=indent, sort_keys=True)
+            )
+            return 0
         if args.command == "run":
             workflow = load_workflow(args.workflow)
             input_data = _load_input(args.input)
@@ -116,7 +129,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             workflow = load_workflow(args.workflow)
             suite = load_suite(args.suite)
             suite_result = run_suite(workflow, suite)
-            if args.json:
+            if args.junit:
+                print(suite_result_to_junit_xml(suite_result, workflow=workflow.name))
+            elif args.json:
                 indent = None if args.compact else 2
                 print(
                     json.dumps(

@@ -17,8 +17,10 @@ def test_public_api_is_small_and_versioned() -> None:
         "WorkflowExecutionError",
         "WorkflowValidationError",
         "WorkflowSuite",
+        "get_schema",
         "load_suite",
         "load_workflow",
         "run_workflow",
         "run_suite",
+        "suite_result_to_junit_xml",
     }

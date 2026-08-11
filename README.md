@@ -41,6 +41,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.venv\Scripts\python`.
 .venv\Scripts\samsarix-spirals validate examples/hello.json
 .venv\Scripts\samsarix-spirals run examples/hello.json --input examples/hello.input.json
 .venv\Scripts\samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json
+.venv\Scripts\samsarix-spirals schema workflow --compact
 ```
 
 The output's `output` field is:
@@ -76,10 +77,30 @@ reduces accidental disclosure of fixture data in CI logs.
 ```console
 samsarix-spirals test workflow.json workflow.suite.json
 samsarix-spirals test workflow.json workflow.suite.json --json --compact
+samsarix-spirals test workflow.json workflow.suite.json --junit
 ```
 
 See [`examples/release-policy.suite.json`](examples/release-policy.suite.json) for a
 release approval gate with both successful and rejected cases.
+
+## JSON Schemas and CI reports
+
+Draft 2020-12 schemas for workflow and suite version `1` ship inside every wheel. Print
+them without locating package files:
+
+```console
+samsarix-spirals schema workflow
+samsarix-spirals schema suite --compact
+```
+
+The schemas provide editor completion and structural validation. Runtime validation is
+still authoritative for document byte/depth budgets, unique IDs and names, and semantic
+template references. The schema `$id` values are stable identifiers; they do not promise
+that a public schema host is deployed yet.
+
+For CI systems that ingest JUnit XML, use `--junit`. The deterministic report contains
+suite and case names plus non-sensitive mismatch categories, but never fixture inputs,
+expected outputs, or actual outputs.
 
 ## Python API
 
@@ -90,6 +111,9 @@ workflow = load_workflow("examples/hello.json")
 result = run_workflow(workflow, {"name": "Ada"})
 print(result.output)
 ```
+
+Bundled schemas and suite reports are also available through `get_schema` and
+`suite_result_to_junit_xml` in the typed Python API.
 
 The pre-1.0 API can change between minor releases. Workflow schema changes will use the
 top-level `schema_version` field and be documented in the changelog.

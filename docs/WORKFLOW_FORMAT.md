@@ -163,3 +163,26 @@ Unknown fields are rejected. Suite files use the same 1 MiB, UTF-8, unique-key,
 finite-number, nesting, string, collection, and total-value limits as workflow and input
 documents. A suite runs all cases even after a mismatch. Human and JSON reports avoid
 echoing fixture values.
+
+### Published structural schemas
+
+The distribution bundles JSON Schema Draft 2020-12 documents for workflow and suite
+version `1`. Retrieve the exact installed versions with:
+
+```console
+samsarix-spirals schema workflow
+samsarix-spirals schema suite
+```
+
+The schemas intentionally cover portable structural constraints. The runtime additionally
+enforces requirements JSON Schema cannot express here, including the 1 MiB byte limit,
+maximum nesting and total-value budgets, unique step IDs and case names, template syntax,
+default existence, and prior-step reference ordering. Passing external schema validation
+does not replace `samsarix-spirals validate` or `samsarix-spirals test`.
+
+### JUnit reports
+
+`samsarix-spirals test WORKFLOW SUITE --junit` emits deterministic JUnit XML on standard
+output. It includes no timestamps, durations, fixture values, or workflow outputs. Invalid
+XML 1.0 characters in user-provided suite, workflow, or case names are replaced with the
+Unicode replacement character so the report always remains parseable.

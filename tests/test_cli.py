@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+from xml.etree import ElementTree
 
 import pytest
 
@@ -158,3 +159,44 @@ def test_workflow_test_command_returns_one_for_contract_failure(tmp_path, capsys
     captured = capsys.readouterr()
     assert "FAIL mismatch" in captured.out
     assert "1 failed" in captured.out
+
+
+def test_schema_command_emits_bundled_schema(capsys) -> None:
+    assert main(["schema", "workflow", "--compact"]) == 0
+    schema = json.loads(capsys.readouterr().out)
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+    assert schema["properties"]["schema_version"] == {"const": 1}
+
+
+def test_workflow_test_command_emits_junit(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    suite = tmp_path / "suite.json"
+    write_workflow(workflow)
+    suite.write_text(
+        json.dumps(
+            {
+                "suite_version": 1,
+                "name": "greetings",
+                "cases": [
+                    {
+                        "name": "greets Ada",
+                        "input": {"name": "Ada"},
+                        "expect": {"output": {"message": "Hello Ada"}},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["test", str(workflow), str(suite), "--junit"]) == 0
+    report = capsys.readouterr().out
+    root = ElementTree.fromstring(report)  # noqa: S314 - parses locally generated XML
+    assert root.attrib["tests"] == "1"
+    assert root.attrib["failures"] == "0"
+
+
+def test_test_report_formats_are_mutually_exclusive() -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["test", "workflow.json", "suite.json", "--json", "--junit"])
+    assert error.value.code == 2

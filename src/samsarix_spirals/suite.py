@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+# ElementTree only constructs reports; production code never parses XML input.
+from xml.etree import ElementTree  # nosec B405
+
 from .errors import WorkflowExecutionError, WorkflowValidationError
 from .model import JsonValue, Workflow, load_json_object, validate_input_object, validate_json_value
 from .runner import run_workflow
@@ -253,9 +256,75 @@ def _run_case(workflow: Workflow, case: SuiteCase) -> CaseResult:
         return CaseResult(
             case.name, False, "workflow completed but an execution error was expected"
         )
-    if result.output != case.expected_output:
+    if not _json_equal(result.output, case.expected_output):
         return CaseResult(case.name, False, "workflow output did not equal expected output")
     return CaseResult(case.name, True)
+
+
+def suite_result_to_junit_xml(result: SuiteResult, *, workflow: str) -> str:
+    """Serialize a non-sensitive, deterministic JUnit XML report."""
+    root = ElementTree.Element(
+        "testsuite",
+        {
+            "name": _xml_safe(result.suite),
+            "tests": str(len(result.cases)),
+            "failures": str(result.failed),
+            "errors": "0",
+            "skipped": "0",
+            "time": "0",
+        },
+    )
+    classname = f"samsarix_spirals.{_xml_safe(workflow)}"
+    for case in result.cases:
+        test_case = ElementTree.SubElement(
+            root,
+            "testcase",
+            {"name": _xml_safe(case.name), "classname": classname, "time": "0"},
+        )
+        if not case.passed:
+            detail = _xml_safe(case.detail or "workflow contract failed")
+            failure = ElementTree.SubElement(
+                test_case,
+                "failure",
+                {"message": detail, "type": "SamsarixContractFailure"},
+            )
+            failure.text = detail
+    return ElementTree.tostring(root, encoding="unicode", xml_declaration=True)
+
+
+def _json_equal(actual: JsonValue, expected: JsonValue) -> bool:
+    if isinstance(actual, bool) or isinstance(expected, bool):
+        return type(actual) is type(expected) and actual == expected
+    if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+        return actual == expected
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(actual, list) and isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _json_equal(actual_item, expected_item)
+            for actual_item, expected_item in zip(actual, expected, strict=True)
+        )
+    if isinstance(actual, dict) and isinstance(expected, dict):
+        return actual.keys() == expected.keys() and all(
+            _json_equal(actual[key], expected[key]) for key in actual
+        )
+    return actual == expected
+
+
+def _xml_safe(value: str) -> str:
+    return "".join(
+        character if _is_xml_character(ord(character)) else "\N{REPLACEMENT CHARACTER}"
+        for character in value
+    )
+
+
+def _is_xml_character(codepoint: int) -> bool:
+    return (
+        codepoint in {0x9, 0xA, 0xD}
+        or 0x20 <= codepoint <= 0xD7FF
+        or 0xE000 <= codepoint <= 0xFFFD
+        or 0x10000 <= codepoint <= 0x10FFFF
+    )
 
 
 def _reject_unknown_keys(

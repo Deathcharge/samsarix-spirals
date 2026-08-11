@@ -19,6 +19,9 @@ use semantic versioning while the public API remains pre-1.0.
   regression cases.
 - A value-free `explain` API and CLI command for input/default path inventory and direct
   step-dependency review without workflow execution.
+- A documented compatibility/deprecation policy and adversarial production-repository
+  policy contract.
+- Automatic execution coverage for every checked-in example suite.
 
 ### Changed
 

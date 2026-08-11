@@ -8,6 +8,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
+
 # ElementTree only constructs reports; production code never parses XML input.
 from xml.etree import ElementTree  # nosec B405
 

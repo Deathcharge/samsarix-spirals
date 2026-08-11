@@ -63,6 +63,11 @@
         }
       ]
     },
+    "exactTemplate": {
+      "type": "string",
+      "maxLength": 100000,
+      "pattern": "^\\{\\{\\s*[A-Za-z][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9_-]+)*\\s*\\}\\}$"
+    },
     "step": {
       "oneOf": [
         {
@@ -70,6 +75,12 @@
         },
         {
           "$ref": "#/$defs/assertStep"
+        },
+        {
+          "$ref": "#/$defs/mergeStep"
+        },
+        {
+          "$ref": "#/$defs/pickStep"
         }
       ]
     },
@@ -90,6 +101,112 @@
           "maxProperties": 10000,
           "additionalProperties": {
             "$ref": "#/$defs/jsonValue"
+          }
+        }
+      }
+    },
+    "mergeStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "uses", "with"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "uses": {
+          "const": "merge"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["objects"],
+          "properties": {
+            "objects": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/exactTemplate"
+                },
+                {
+                  "type": "array",
+                  "maxItems": 10000,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "maxProperties": 10000,
+                        "additionalProperties": {
+                          "$ref": "#/$defs/jsonValue"
+                        }
+                      },
+                      {
+                        "$ref": "#/$defs/exactTemplate"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "pickStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "uses", "with"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "uses": {
+          "const": "pick"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["object", "keys"],
+          "properties": {
+            "object": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "maxProperties": 10000,
+                  "additionalProperties": {
+                    "$ref": "#/$defs/jsonValue"
+                  }
+                },
+                {
+                  "$ref": "#/$defs/exactTemplate"
+                }
+              ]
+            },
+            "keys": {
+              "oneOf": [
+                {
+                  "type": "array",
+                  "maxItems": 10000,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 100000
+                  }
+                },
+                {
+                  "$ref": "#/$defs/exactTemplate"
+                }
+              ]
+            },
+            "required": {
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/exactTemplate"
+                }
+              ]
+            }
           }
         }
       }

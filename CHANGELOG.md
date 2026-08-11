@@ -13,6 +13,10 @@ use semantic versioning while the public API remains pre-1.0.
 - Competitive positioning, flagship use cases, and measurable adoption gates.
 - Bundled JSON Schema Draft 2020-12 documents with CLI and Python discovery APIs.
 - Deterministic, value-redacted JUnit XML reports for native CI ingestion.
+- Bounded `merge` and `pick` operations for shallow object composition and explicit
+  top-level output allowlists.
+- An agent tool-result example with approval, required-field, and adversarial extra-field
+  regression cases.
 
 ### Changed
 

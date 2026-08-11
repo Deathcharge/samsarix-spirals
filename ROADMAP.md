@@ -41,8 +41,8 @@ this boundary.
 - [x] Exact-output and expected-error assertions.
 - [x] Human and machine-readable reports with CI exit behavior.
 - [x] A realistic release-policy example.
-- [ ] Publish JSON Schemas for workflows and suites.
-- [ ] Emit JUnit XML for native CI test reporting.
+- [x] Publish JSON Schemas for workflows and suites.
+- [x] Emit JUnit XML for native CI test reporting.
 
 ### 0.3 — Useful deterministic shaping
 

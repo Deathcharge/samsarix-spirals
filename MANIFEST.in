@@ -4,3 +4,4 @@ include NOTICE
 include SECURITY.md
 recursive-include docs *.md
 recursive-include examples *.json
+recursive-include src/samsarix_spirals/schemas *.json

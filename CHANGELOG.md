@@ -11,8 +11,13 @@ use semantic versioning while the public API remains pre-1.0.
   contracts through the Python API and `samsarix-spirals test` command.
 - A release-policy example that demonstrates a practical CI approval gate.
 - Competitive positioning, flagship use cases, and measurable adoption gates.
+- Bundled JSON Schema Draft 2020-12 documents with CLI and Python discovery APIs.
+- Deterministic, value-redacted JUnit XML reports for native CI ingestion.
 
 ### Changed
+
+- Exact suite-output comparison now distinguishes JSON booleans from numbers while
+  retaining JSON numeric equality between integer and decimal representations.
 
 - Renamed the product, distribution, import package, CLI, and public base exception from
   Helix Spirals to Samsarix Spirals under Samsarix LLC ownership.

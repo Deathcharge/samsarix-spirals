@@ -44,7 +44,7 @@ at most 1 MiB, at most 20 levels deep, and contain only finite JSON numbers.
 Each step has exactly three fields:
 
 - `id`: starts with a letter, then contains up to 63 letters, digits, `_`, or `-`.
-- `uses`: one of `set` or `assert`.
+- `uses`: one of `set`, `assert`, `merge`, or `pick`.
 - `with`: an object containing operation arguments.
 
 IDs are unique and case-sensitive. A step can reference only earlier steps. Execution is
@@ -85,6 +85,50 @@ Operators that compare against another value also require `expected`.
 Ordered operands must both be numbers or both strings. Booleans are not treated as
 numbers. A successful assertion exposes `{"passed": true, "value": ...}`. A failed
 assertion stops the workflow and makes the CLI exit `1`.
+
+### `merge`
+
+`merge` requires `objects`, which must render to an array of objects. It creates a new
+object by applying those objects from left to right. When a key occurs more than once,
+the value in the later object wins.
+
+```json
+{
+  "id": "enriched",
+  "uses": "merge",
+  "with": {
+    "objects": [
+      {"source": "agent", "reviewed": true},
+      "{{ input.result }}"
+    ]
+  }
+}
+```
+
+The operation is shallow: nested objects are replaced, not recursively merged. Inputs
+are copied, so later processing cannot mutate workflow defaults or prior step outputs.
+The normal collection and total-value budgets apply to the result.
+
+### `pick`
+
+`pick` requires `object` and `keys`. It returns a new object containing only the named
+top-level keys, in the order given by `keys`.
+
+```json
+{
+  "id": "public_result",
+  "uses": "pick",
+  "with": {
+    "object": "{{ steps.enriched }}",
+    "keys": ["ticket_id", "summary", "source"]
+  }
+}
+```
+
+`keys` must render to an array of unique strings. By default, every named key is required
+and a missing key fails the step. Set `required` to `false` to omit missing keys instead.
+`pick` is an allowlist rather than a redaction list: every field that may leave the
+workflow boundary must be named explicitly.
 
 ## Templates
 

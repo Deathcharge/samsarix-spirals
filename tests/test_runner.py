@@ -202,6 +202,132 @@ def test_default_output_is_last_step_and_result_is_detached() -> None:
     assert first.output == {"items": [1]}
 
 
+def test_merge_is_left_to_right_and_does_not_mutate_input() -> None:
+    workflow = workflow_with_steps(
+        [
+            {
+                "id": "combined",
+                "uses": "merge",
+                "with": {
+                    "objects": [
+                        "{{ input.base }}",
+                        {"status": "reviewed", "owner": "{{ input.owner }}"},
+                        "{{ input.override }}",
+                    ]
+                },
+            }
+        ]
+    )
+    input_data = {
+        "base": {"id": 7, "status": "draft", "nested": {"value": 1}},
+        "owner": "Ada",
+        "override": {"status": "approved"},
+    }
+
+    result = run_workflow(workflow, input_data)
+
+    assert result.output == {
+        "id": 7,
+        "status": "approved",
+        "nested": {"value": 1},
+        "owner": "Ada",
+    }
+    assert input_data["base"] == {"id": 7, "status": "draft", "nested": {"value": 1}}
+
+
+def test_pick_allowlists_keys_and_can_skip_missing_optional_keys() -> None:
+    required = workflow_with_steps(
+        [
+            {
+                "id": "public",
+                "uses": "pick",
+                "with": {
+                    "object": "{{ input.payload }}",
+                    "keys": ["id", "summary"],
+                },
+            }
+        ]
+    )
+    optional = workflow_with_steps(
+        [
+            {
+                "id": "public",
+                "uses": "pick",
+                "with": {
+                    "object": "{{ input.payload }}",
+                    "keys": ["id", "missing"],
+                    "required": False,
+                },
+            }
+        ]
+    )
+    payload = {"id": 7, "summary": "safe", "secret": "do not expose"}
+
+    assert run_workflow(required, {"payload": payload}).output == {"id": 7, "summary": "safe"}
+    assert run_workflow(optional, {"payload": payload}).output == {"id": 7}
+
+
+@pytest.mark.parametrize(
+    "uses,arguments,message",
+    [
+        ("merge", {"objects": "{{ input.objects }}"}, "must render to an array"),
+        (
+            "merge",
+            {"objects": "{{ input.objects_with_scalar }}"},
+            r"objects\[1\] must render to an object",
+        ),
+        (
+            "pick",
+            {"object": "{{ input.not_object }}", "keys": []},
+            "object must render to an object",
+        ),
+        ("pick", {"object": {}, "keys": "{{ input.not_keys }}"}, "keys must render to an array"),
+        (
+            "pick",
+            {"object": {"id": 1}, "keys": "{{ input.non_string_keys }}"},
+            r"keys\[0\] must render to a string",
+        ),
+        ("pick", {"object": {"id": 1}, "keys": ["id", "id"]}, "is duplicated"),
+        ("pick", {"object": {"id": 1}, "keys": ["missing"]}, "missing required key"),
+    ],
+)
+def test_object_shaping_runtime_errors(
+    uses: str, arguments: dict[str, object], message: str
+) -> None:
+    workflow = workflow_with_steps([{"id": "shape", "uses": uses, "with": arguments}])
+
+    with pytest.raises(WorkflowExecutionError, match=message):
+        run_workflow(
+            workflow,
+            {
+                "objects": {},
+                "objects_with_scalar": [{}, 1],
+                "not_object": [],
+                "not_keys": {},
+                "non_string_keys": [1],
+            },
+        )
+
+
+def test_pick_required_template_must_render_to_boolean() -> None:
+    workflow = workflow_with_steps(
+        [
+            {
+                "id": "shape",
+                "uses": "pick",
+                "with": {
+                    "object": {},
+                    "keys": [],
+                    "required": "{{ input.required }}",
+                },
+            }
+        ]
+    )
+
+    with pytest.raises(WorkflowExecutionError, match="must render to a boolean"):
+        run_workflow(workflow, {"required": "yes"})
+
+
 def test_run_limits_and_input_validation() -> None:
     workflow = workflow_with_steps(
         [

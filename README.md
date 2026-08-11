@@ -11,7 +11,7 @@ on PyPI, so install it from a checkout or a locally built wheel.
 ## What it does
 
 - Validates a versioned JSON workflow before execution.
-- Runs `set` and `assert` steps in a fixed order.
+- Runs `set`, `assert`, `merge`, and `pick` steps in a fixed order.
 - Runs checked-in suites that prove expected outputs and expected failures.
 - Renders values from `input`, `defaults`, and completed `steps`.
 - Emits deterministic JSON with no timestamps, random IDs, or hidden state.
@@ -41,6 +41,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.venv\Scripts\python`.
 .venv\Scripts\samsarix-spirals validate examples/hello.json
 .venv\Scripts\samsarix-spirals run examples/hello.json --input examples/hello.input.json
 .venv\Scripts\samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json
+.venv\Scripts\samsarix-spirals test examples/agent-tool-result.json examples/agent-tool-result.suite.json
 .venv\Scripts\samsarix-spirals schema workflow --compact
 ```
 
@@ -82,6 +83,10 @@ samsarix-spirals test workflow.json workflow.suite.json --junit
 
 See [`examples/release-policy.suite.json`](examples/release-policy.suite.json) for a
 release approval gate with both successful and rejected cases.
+[`examples/agent-tool-result.suite.json`](examples/agent-tool-result.suite.json) proves
+that an approved agent result is enriched, restricted to an explicit key allowlist, and
+rejected when required output is absent. Extra reasoning and credential-shaped fields
+never reach the workflow output.
 
 ## JSON Schemas and CI reports
 

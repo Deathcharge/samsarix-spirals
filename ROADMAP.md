@@ -50,7 +50,7 @@ this boundary.
   arbitrary expressions.
 - [ ] Add bounded list mapping, filtering, and string normalization without arbitrary
   expressions.
-- Add an `explain` command that shows dependencies and referenced input paths without
+- [x] Add an `explain` command that shows dependencies and referenced input paths without
   executing the workflow.
 - Define compatibility and deprecation rules for every schema-visible operation.
 - [x] Prove an agent-output contract with adversarial extra-field, approval, and

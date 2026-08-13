@@ -108,6 +108,10 @@ def run_workflow(
 def _execute_step(step: Step, arguments: dict[str, JsonValue]) -> JsonValue:
     if step.uses == "set":
         return copy.deepcopy(arguments)
+    if step.uses == "merge":
+        return _merge_objects(arguments, step_id=step.id)
+    if step.uses == "pick":
+        return _pick_keys(arguments, step_id=step.id)
     if step.uses == "assert":
         value = arguments.get("value")
         expected = arguments.get("expected")
@@ -132,6 +136,55 @@ def _execute_step(step: Step, arguments: dict[str, JsonValue]) -> JsonValue:
     raise WorkflowExecutionError(  # pragma: no cover - validated model invariant
         f"unsupported operation {step.uses!r}", step_id=step.id
     )
+
+
+def _merge_objects(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValue:
+    objects = arguments.get("objects")
+    if not isinstance(objects, list):
+        raise WorkflowExecutionError("merge objects must render to an array", step_id=step_id)
+    merged: dict[str, JsonValue] = {}
+    for index, value in enumerate(objects):
+        if not isinstance(value, dict):
+            raise WorkflowExecutionError(
+                f"merge objects[{index}] must render to an object", step_id=step_id
+            )
+        merged.update(copy.deepcopy(value))
+        if len(merged) > MAX_COLLECTION_ITEMS:  # pragma: no cover - render budget is tighter
+            raise WorkflowExecutionError(
+                f"merged object exceeds the {MAX_COLLECTION_ITEMS}-key limit", step_id=step_id
+            )
+    return merged
+
+
+def _pick_keys(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValue:
+    value = arguments.get("object")
+    keys = arguments.get("keys")
+    required = arguments.get("required", True)
+    if not isinstance(value, dict):
+        raise WorkflowExecutionError("pick object must render to an object", step_id=step_id)
+    if not isinstance(keys, list):
+        raise WorkflowExecutionError("pick keys must render to an array", step_id=step_id)
+    if not isinstance(required, bool):
+        raise WorkflowExecutionError("pick required must render to a boolean", step_id=step_id)
+
+    selected: dict[str, JsonValue] = {}
+    seen: set[str] = set()
+    for index, key in enumerate(keys):
+        if not isinstance(key, str):
+            raise WorkflowExecutionError(
+                f"pick keys[{index}] must render to a string", step_id=step_id
+            )
+        if key in seen:
+            raise WorkflowExecutionError(f"pick key {key!r} is duplicated", step_id=step_id)
+        seen.add(key)
+        if key not in value:
+            if required:
+                raise WorkflowExecutionError(
+                    f"pick object is missing required key {key!r}", step_id=step_id
+                )
+            continue
+        selected[key] = copy.deepcopy(value[key])
+    return selected
 
 
 def _evaluate_assertion(value: JsonValue, operator: str, expected: JsonValue) -> bool:

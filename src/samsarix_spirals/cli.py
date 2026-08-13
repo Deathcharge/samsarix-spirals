@@ -12,6 +12,7 @@ from pathlib import Path
 
 from . import __version__
 from .errors import WorkflowExecutionError, WorkflowValidationError
+from .explain import explain_workflow
 from .model import (
     DEFAULT_MAX_RUN_STEPS,
     MAX_DOCUMENT_BYTES,
@@ -59,13 +60,17 @@ STARTER_WORKFLOW: dict[str, JsonValue] = {
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="samsarix-spirals",
-        description="Validate and run deterministic local JSON workflows.",
+        description="Validate, explain, and run deterministic local JSON workflows.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
 
     validate = commands.add_parser("validate", help="validate a workflow without running it")
     validate.add_argument("workflow", type=Path)
+
+    explain = commands.add_parser("explain", help="show workflow references without running it")
+    explain.add_argument("workflow", type=Path)
+    explain.add_argument("--compact", action="store_true", help="emit compact JSON")
 
     run = commands.add_parser("run", help="run a workflow")
     run.add_argument("workflow", type=Path)
@@ -107,6 +112,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "validate":
             workflow = load_workflow(args.workflow)
             print(f"valid: {args.workflow} ({len(workflow.steps)} steps)")
+            return 0
+        if args.command == "explain":
+            explanation = explain_workflow(load_workflow(args.workflow))
+            indent = None if args.compact else 2
+            print(
+                json.dumps(explanation.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True)
+            )
             return 0
         if args.command == "init":
             return _init_workflow(args.path)

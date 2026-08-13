@@ -47,6 +47,27 @@ def test_validate_and_run_commands(tmp_path, capsys) -> None:
     assert captured.err == ""
 
 
+def test_explain_command_does_not_require_or_echo_input(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    write_workflow(workflow)
+
+    assert main(["explain", str(workflow), "--compact"]) == 0
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["input_paths"] == ["input.name"]
+    assert result["steps"] == [
+        {
+            "id": "hello",
+            "uses": "set",
+            "depends_on": [],
+            "input_paths": ["input.name"],
+            "default_paths": [],
+        }
+    ]
+    assert "Ada" not in captured.out
+    assert captured.err == ""
+
+
 def test_run_reads_standard_input(tmp_path, capsys, monkeypatch) -> None:
     workflow = tmp_path / "workflow.json"
     write_workflow(workflow)

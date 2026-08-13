@@ -23,7 +23,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -58,4 +58,11 @@ jobs:
       - run: python -m venv /tmp/samsarix-spirals-smoke
       - run: /tmp/samsarix-spirals-smoke/bin/python -m pip install --no-deps dist/*.whl
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals validate examples/hello.json
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals explain examples/agent-tool-result.json --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals run examples/hello.json --input examples/hello.input.json --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json --json --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json --junit
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/agent-tool-result.json examples/agent-tool-result.suite.json --json --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/repository-policy.json examples/repository-policy.suite.json --json --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals schema workflow --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals schema suite --compact

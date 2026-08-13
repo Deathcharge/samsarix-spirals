@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "samsarix-spirals"
 version = "0.1.0"
-description = "A deterministic local runner for small, checked-in JSON workflows"
+description = "Deterministic JSON workflow contracts for local development and CI"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MPL-2.0"
@@ -17,7 +17,7 @@ authors = [
 maintainers = [
   { name = "Samsarix LLC", email = "support@samsarix.com" },
 ]
-keywords = ["automation", "cli", "json", "workflow"]
+keywords = ["automation", "ci", "cli", "contract-testing", "json", "workflow"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -38,6 +38,7 @@ dev = [
   "build>=1.2,<2",
   "mypy>=1.11,<2",
   "pip-audit>=2.9,<3",
+  "jsonschema>=4.23,<5",
   "pytest>=8,<9",
   "pytest-cov>=5,<7",
   "ruff>=0.8,<1",
@@ -48,8 +49,8 @@ dev = [
 samsarix-spirals = "samsarix_spirals.cli:main"
 
 [project.urls]
-Repository = "https://github.com/Deathcharge/helix-spirals"
-Issues = "https://github.com/Deathcharge/helix-spirals/issues"
+Repository = "https://github.com/Deathcharge/samsarix-spirals"
+Issues = "https://github.com/Deathcharge/samsarix-spirals/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -58,7 +59,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-samsarix_spirals = ["py.typed"]
+samsarix_spirals = ["py.typed", "schemas/*.json"]
 
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers -ra --cov=samsarix_spirals --cov-branch --cov-report=term-missing --cov-fail-under=95"

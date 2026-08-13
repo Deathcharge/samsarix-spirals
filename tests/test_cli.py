@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+from xml.etree import ElementTree
 
 import pytest
 
@@ -43,6 +44,27 @@ def test_validate_and_run_commands(tmp_path, capsys) -> None:
     captured = capsys.readouterr()
     result = json.loads(captured.out)
     assert result["output"] == {"message": "Hello Ada"}
+    assert captured.err == ""
+
+
+def test_explain_command_does_not_require_or_echo_input(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    write_workflow(workflow)
+
+    assert main(["explain", str(workflow), "--compact"]) == 0
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["input_paths"] == ["input.name"]
+    assert result["steps"] == [
+        {
+            "id": "hello",
+            "uses": "set",
+            "depends_on": [],
+            "input_paths": ["input.name"],
+            "default_paths": [],
+        }
+    ]
+    assert "Ada" not in captured.out
     assert captured.err == ""
 
 
@@ -107,3 +129,95 @@ def test_version_and_required_command(capsys) -> None:
     with pytest.raises(SystemExit) as missing:
         main([])
     assert missing.value.code == 2
+
+
+def test_workflow_test_command_reports_human_and_json_results(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    suite = tmp_path / "suite.json"
+    write_workflow(workflow)
+    suite.write_text(
+        json.dumps(
+            {
+                "suite_version": 1,
+                "name": "greetings",
+                "cases": [
+                    {
+                        "name": "greets Ada",
+                        "input": {"name": "Ada"},
+                        "expect": {"output": {"message": "Hello Ada"}},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["test", str(workflow), str(suite)]) == 0
+    assert capsys.readouterr().out == "PASS greets Ada\nsuite greetings: 1 passed, 0 failed\n"
+
+    assert main(["test", str(workflow), str(suite), "--json", "--compact"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["successful"] is True
+    assert result["passed"] == 1
+
+
+def test_workflow_test_command_returns_one_for_contract_failure(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    suite = tmp_path / "suite.json"
+    write_workflow(workflow)
+    suite.write_text(
+        json.dumps(
+            {
+                "suite_version": 1,
+                "name": "broken",
+                "cases": [{"name": "mismatch", "input": {"name": "Ada"}, "expect": {"output": {}}}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["test", str(workflow), str(suite)]) == 1
+    captured = capsys.readouterr()
+    assert "FAIL mismatch" in captured.out
+    assert "1 failed" in captured.out
+
+
+def test_schema_command_emits_bundled_schema(capsys) -> None:
+    assert main(["schema", "workflow", "--compact"]) == 0
+    schema = json.loads(capsys.readouterr().out)
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+    assert schema["properties"]["schema_version"] == {"const": 1}
+
+
+def test_workflow_test_command_emits_junit(tmp_path, capsys) -> None:
+    workflow = tmp_path / "workflow.json"
+    suite = tmp_path / "suite.json"
+    write_workflow(workflow)
+    suite.write_text(
+        json.dumps(
+            {
+                "suite_version": 1,
+                "name": "greetings",
+                "cases": [
+                    {
+                        "name": "greets Ada",
+                        "input": {"name": "Ada"},
+                        "expect": {"output": {"message": "Hello Ada"}},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["test", str(workflow), str(suite), "--junit"]) == 0
+    report = capsys.readouterr().out
+    root = ElementTree.fromstring(report)  # noqa: S314 - parses locally generated XML
+    assert root.attrib["tests"] == "1"
+    assert root.attrib["failures"] == "0"
+
+
+def test_test_report_formats_are_mutually_exclusive() -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["test", "workflow.json", "suite.json", "--json", "--junit"])
+    assert error.value.code == 2

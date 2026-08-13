@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "name": "repository-policy",
+  "description": "Enforce a minimum production-repository security baseline in CI.",
+  "defaults": {
+    "minimum_reviews": 2
+  },
+  "steps": [
+    {
+      "id": "active",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.repository.archived }}",
+        "operator": "falsy",
+        "message": "production repository must be active"
+      }
+    },
+    {
+      "id": "private_visibility",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.repository.visibility }}",
+        "operator": "not_equals",
+        "expected": "public",
+        "message": "production repository must not be public"
+      }
+    },
+    {
+      "id": "reviews",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.protection.required_reviews }}",
+        "operator": "greater_or_equal",
+        "expected": "{{ defaults.minimum_reviews }}",
+        "message": "production repository requires two approving reviews"
+      }
+    },
+    {
+      "id": "code_owners",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.protection.require_code_owner_reviews }}",
+        "operator": "truthy",
+        "message": "code-owner review is required"
+      }
+    },
+    {
+      "id": "secret_scanning",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.security.secret_scanning }}",
+        "operator": "truthy",
+        "message": "secret scanning is required"
+      }
+    },
+    {
+      "id": "manifest",
+      "uses": "set",
+      "with": {
+        "repository": "{{ input.repository.name }}",
+        "visibility": "{{ input.repository.visibility }}",
+        "required_reviews": "{{ input.protection.required_reviews }}",
+        "status": "compliant"
+      }
+    }
+  ],
+  "output": "{{ steps.manifest }}"
+}

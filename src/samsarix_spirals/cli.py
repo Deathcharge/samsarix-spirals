@@ -12,6 +12,7 @@ from pathlib import Path
 
 from . import __version__
 from .errors import WorkflowExecutionError, WorkflowValidationError
+from .explain import explain_workflow
 from .model import (
     DEFAULT_MAX_RUN_STEPS,
     MAX_DOCUMENT_BYTES,
@@ -22,6 +23,8 @@ from .model import (
     parse_json_object_bytes,
 )
 from .runner import run_workflow
+from .schema import SCHEMA_NAMES, get_schema
+from .suite import load_suite, run_suite, suite_result_to_junit_xml
 
 STARTER_WORKFLOW: dict[str, JsonValue] = {
     "schema_version": 1,
@@ -57,13 +60,17 @@ STARTER_WORKFLOW: dict[str, JsonValue] = {
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="samsarix-spirals",
-        description="Validate and run deterministic local JSON workflows.",
+        description="Validate, explain, and run deterministic local JSON workflows.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
 
     validate = commands.add_parser("validate", help="validate a workflow without running it")
     validate.add_argument("workflow", type=Path)
+
+    explain = commands.add_parser("explain", help="show workflow references without running it")
+    explain.add_argument("workflow", type=Path)
+    explain.add_argument("--compact", action="store_true", help="emit compact JSON")
 
     run = commands.add_parser("run", help="run a workflow")
     run.add_argument("workflow", type=Path)
@@ -82,6 +89,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--compact", action="store_true", help="emit compact JSON")
 
+    test = commands.add_parser("test", help="run a workflow regression suite")
+    test.add_argument("workflow", type=Path)
+    test.add_argument("suite", type=Path)
+    report = test.add_mutually_exclusive_group()
+    report.add_argument("--json", action="store_true", help="emit a machine-readable report")
+    report.add_argument("--junit", action="store_true", help="emit deterministic JUnit XML")
+    test.add_argument("--compact", action="store_true", help="compact the JSON report")
+
+    schema = commands.add_parser("schema", help="print a bundled JSON Schema")
+    schema.add_argument("kind", choices=SCHEMA_NAMES)
+    schema.add_argument("--compact", action="store_true", help="emit compact JSON")
+
     init = commands.add_parser("init", help="write a starter workflow without overwriting files")
     init.add_argument("path", type=Path)
     return parser
@@ -94,15 +113,53 @@ def main(argv: Sequence[str] | None = None) -> int:
             workflow = load_workflow(args.workflow)
             print(f"valid: {args.workflow} ({len(workflow.steps)} steps)")
             return 0
+        if args.command == "explain":
+            explanation = explain_workflow(load_workflow(args.workflow))
+            indent = None if args.compact else 2
+            print(
+                json.dumps(explanation.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True)
+            )
+            return 0
         if args.command == "init":
             return _init_workflow(args.path)
+        if args.command == "schema":
+            indent = None if args.compact else 2
+            print(
+                json.dumps(get_schema(args.kind), ensure_ascii=False, indent=indent, sort_keys=True)
+            )
+            return 0
         if args.command == "run":
             workflow = load_workflow(args.workflow)
             input_data = _load_input(args.input)
-            result = run_workflow(workflow, input_data, max_steps=args.max_steps)
+            run_result = run_workflow(workflow, input_data, max_steps=args.max_steps)
             indent = None if args.compact else 2
-            print(json.dumps(result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True))
+            print(
+                json.dumps(run_result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True)
+            )
             return 0
+        if args.command == "test":
+            workflow = load_workflow(args.workflow)
+            suite = load_suite(args.suite)
+            suite_result = run_suite(workflow, suite)
+            if args.junit:
+                print(suite_result_to_junit_xml(suite_result, workflow=workflow.name))
+            elif args.json:
+                indent = None if args.compact else 2
+                print(
+                    json.dumps(
+                        suite_result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True
+                    )
+                )
+            else:
+                for case in suite_result.cases:
+                    status = "PASS" if case.passed else "FAIL"
+                    detail = f": {case.detail}" if case.detail else ""
+                    print(f"{status} {case.name}{detail}")
+                print(
+                    f"suite {suite_result.suite}: "
+                    f"{suite_result.passed} passed, {suite_result.failed} failed"
+                )
+            return 0 if suite_result.successful else 1
     except WorkflowExecutionError as error:
         print(f"execution error: {error}", file=sys.stderr)
         return 1

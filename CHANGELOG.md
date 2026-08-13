@@ -5,7 +5,28 @@ use semantic versioning while the public API remains pre-1.0.
 
 ## [Unreleased]
 
+### Added
+
+- Versioned, bounded workflow regression suites with exact-output and expected-error
+  contracts through the Python API and `samsarix-spirals test` command.
+- A release-policy example that demonstrates a practical CI approval gate.
+- Competitive positioning, flagship use cases, and measurable adoption gates.
+- Bundled JSON Schema Draft 2020-12 documents with CLI and Python discovery APIs.
+- Deterministic, value-redacted JUnit XML reports for native CI ingestion.
+- Bounded `merge` and `pick` operations for shallow object composition and explicit
+  top-level output allowlists.
+- An agent tool-result example with approval, required-field, and adversarial extra-field
+  regression cases.
+- A value-free `explain` API and CLI command for input/default path inventory and direct
+  step-dependency review without workflow execution.
+- A documented compatibility/deprecation policy and adversarial production-repository
+  policy contract.
+- Automatic execution coverage for every checked-in example suite.
+
 ### Changed
+
+- Exact suite-output comparison now distinguishes JSON booleans from numbers while
+  retaining JSON numeric equality between integer and decimal representations.
 
 - Renamed the product, distribution, import package, CLI, and public base exception from
   Helix Spirals to Samsarix Spirals under Samsarix LLC ownership.

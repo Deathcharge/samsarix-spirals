@@ -1,0 +1,102 @@
+{
+  "suite_version": 1,
+  "name": "production repository policy contract",
+  "cases": [
+    {
+      "name": "protected private repository is accepted",
+      "input": {
+        "repository": {
+          "name": "payments-api",
+          "visibility": "private",
+          "archived": false,
+          "deploy_token": "must never reach the output"
+        },
+        "protection": {
+          "required_reviews": 2,
+          "require_code_owner_reviews": true
+        },
+        "security": {
+          "secret_scanning": true
+        }
+      },
+      "expect": {
+        "output": {
+          "repository": "payments-api",
+          "visibility": "private",
+          "required_reviews": 2,
+          "status": "compliant"
+        }
+      }
+    },
+    {
+      "name": "archived repository is rejected",
+      "input": {
+        "repository": {"name": "payments-api", "visibility": "private", "archived": true},
+        "protection": {"required_reviews": 2, "require_code_owner_reviews": true},
+        "security": {"secret_scanning": true}
+      },
+      "expect": {
+        "error": {
+          "step_id": "active",
+          "message_contains": "must be active"
+        }
+      }
+    },
+    {
+      "name": "public repository is rejected",
+      "input": {
+        "repository": {"name": "payments-api", "visibility": "public", "archived": false},
+        "protection": {"required_reviews": 2, "require_code_owner_reviews": true},
+        "security": {"secret_scanning": true}
+      },
+      "expect": {
+        "error": {
+          "step_id": "private_visibility",
+          "message_contains": "must not be public"
+        }
+      }
+    },
+    {
+      "name": "boolean review count cannot bypass numeric policy",
+      "input": {
+        "repository": {"name": "payments-api", "visibility": "private", "archived": false},
+        "protection": {"required_reviews": true, "require_code_owner_reviews": true},
+        "security": {"secret_scanning": true}
+      },
+      "expect": {
+        "error": {
+          "step_id": "reviews",
+          "message_contains": "does not compare booleans"
+        }
+      }
+    },
+    {
+      "name": "missing code-owner enforcement is rejected",
+      "input": {
+        "repository": {"name": "payments-api", "visibility": "private", "archived": false},
+        "protection": {"required_reviews": 2, "require_code_owner_reviews": false},
+        "security": {"secret_scanning": true}
+      },
+      "expect": {
+        "error": {
+          "step_id": "code_owners",
+          "message_contains": "code-owner review is required"
+        }
+      }
+    },
+    {
+      "name": "missing secret-scanning field is rejected",
+      "input": {
+        "repository": {"name": "payments-api", "visibility": "private", "archived": false},
+        "protection": {"required_reviews": 2, "require_code_owner_reviews": true},
+        "security": {}
+      },
+      "expect": {
+        "error": {
+          "step_id": "secret_scanning",
+          "message_contains": "secret_scanning"
+        }
+      }
+    }
+  ]
+}

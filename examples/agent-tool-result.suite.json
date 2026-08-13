@@ -1,0 +1,61 @@
+{
+  "suite_version": 1,
+  "name": "agent tool-result contract",
+  "cases": [
+    {
+      "name": "approved result is enriched and allowlisted",
+      "input": {
+        "approved": true,
+        "result": {
+          "ticket_id": "INC-42",
+          "summary": "Investigate latency regression",
+          "priority": "high",
+          "internal_reasoning": "must never leave the contract boundary",
+          "credential": "must never leave the contract boundary"
+        }
+      },
+      "expect": {
+        "output": {
+          "ticket_id": "INC-42",
+          "summary": "Investigate latency regression",
+          "priority": "high",
+          "source": "agent",
+          "reviewed": true
+        }
+      }
+    },
+    {
+      "name": "unapproved result is rejected",
+      "input": {
+        "approved": false,
+        "result": {
+          "ticket_id": "INC-42",
+          "summary": "Investigate latency regression",
+          "priority": "high"
+        }
+      },
+      "expect": {
+        "error": {
+          "step_id": "require_approval",
+          "message_contains": "requires approval"
+        }
+      }
+    },
+    {
+      "name": "missing required output field is rejected",
+      "input": {
+        "approved": true,
+        "result": {
+          "ticket_id": "INC-42",
+          "summary": "Investigate latency regression"
+        }
+      },
+      "expect": {
+        "error": {
+          "step_id": "allowlist",
+          "message_contains": "missing required key 'priority'"
+        }
+      }
+    }
+  ]
+}

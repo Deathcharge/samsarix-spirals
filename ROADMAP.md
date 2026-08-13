@@ -46,12 +46,16 @@ this boundary.
 
 ### 0.3 — Useful deterministic shaping
 
-- Add a small, orthogonal operation set for object merge, key selection, list mapping,
-  filtering, and string normalization without arbitrary expressions.
-- Add an `explain` command that shows dependencies and referenced input paths without
+- [x] Add bounded shallow object merge and explicit top-level key selection without
+  arbitrary expressions.
+- [ ] Add bounded list mapping, filtering, and string normalization without arbitrary
+  expressions.
+- [x] Add an `explain` command that shows dependencies and referenced input paths without
   executing the workflow.
-- Define compatibility and deprecation rules for every schema-visible operation.
-- Prove agent-output and repository-policy examples with adversarial fixtures.
+- [x] Define compatibility and deprecation rules for every schema-visible operation.
+- [x] Prove an agent-output contract with adversarial extra-field, approval, and
+  required-field fixtures.
+- [x] Prove a repository-policy example with adversarial fixtures.
 
 ### 0.4 — Repository adoption
 

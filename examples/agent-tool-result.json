@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "name": "agent-tool-result",
+  "description": "Gate an untrusted agent result and emit only explicitly allowed fields.",
+  "defaults": {
+    "policy_metadata": {
+      "source": "agent",
+      "reviewed": true
+    }
+  },
+  "steps": [
+    {
+      "id": "require_approval",
+      "uses": "assert",
+      "with": {
+        "value": "{{ input.approved }}",
+        "operator": "equals",
+        "expected": true,
+        "message": "agent result requires approval"
+      }
+    },
+    {
+      "id": "enriched",
+      "uses": "merge",
+      "with": {
+        "objects": [
+          "{{ defaults.policy_metadata }}",
+          "{{ input.result }}"
+        ]
+      }
+    },
+    {
+      "id": "allowlist",
+      "uses": "pick",
+      "with": {
+        "object": "{{ steps.enriched }}",
+        "keys": [
+          "ticket_id",
+          "summary",
+          "priority",
+          "source",
+          "reviewed"
+        ]
+      }
+    }
+  ],
+  "output": "{{ steps.allowlist }}"
+}

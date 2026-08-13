@@ -29,7 +29,7 @@ DEFAULT_MAX_RUN_STEPS = 100
 
 STEP_ID_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
 TEMPLATE_PATTERN = re.compile(r"{{\s*([A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_-]+)*)\s*}}")
-SUPPORTED_OPERATIONS = frozenset({"assert", "set"})
+SUPPORTED_OPERATIONS = frozenset({"assert", "merge", "pick", "set"})
 ASSERT_OPERATORS = frozenset(
     {
         "contains",
@@ -147,6 +147,10 @@ class Workflow:
 
             if uses == "assert":
                 _validate_assert(arguments, path, issues)
+            elif uses == "merge":
+                _validate_merge(arguments, path, issues)
+            elif uses == "pick":
+                _validate_pick(arguments, path, issues)
             _validate_templates(arguments, f"{path}.with", seen_ids - {step_id}, defaults, issues)
             steps.append(Step(id=step_id, uses=uses, arguments=arguments))
 
@@ -394,6 +398,54 @@ def _validate_assert(arguments: dict[str, JsonValue], path: str, issues: list[st
     message = arguments.get("message")
     if message is not None and not isinstance(message, str):
         issues.append(f"{path}.with.message must be a string")
+
+
+def _validate_merge(arguments: dict[str, JsonValue], path: str, issues: list[str]) -> None:
+    _reject_unknown_keys(arguments, {"objects"}, f"{path}.with", issues)
+    if "objects" not in arguments:
+        issues.append(f"{path}.with.objects is required for merge")
+        return
+    objects = arguments["objects"]
+    if isinstance(objects, str) and TEMPLATE_PATTERN.fullmatch(objects):
+        return
+    if not isinstance(objects, list):
+        issues.append(f"{path}.with.objects must be an array or exact template")
+        return
+    for index, value in enumerate(objects):
+        if isinstance(value, dict):
+            continue
+        if isinstance(value, str) and TEMPLATE_PATTERN.fullmatch(value):
+            continue
+        issues.append(f"{path}.with.objects[{index}] must be an object or exact template")
+
+
+def _validate_pick(arguments: dict[str, JsonValue], path: str, issues: list[str]) -> None:
+    _reject_unknown_keys(arguments, {"keys", "object", "required"}, f"{path}.with", issues)
+    if "object" not in arguments:
+        issues.append(f"{path}.with.object is required for pick")
+    else:
+        value = arguments["object"]
+        if not isinstance(value, dict) and not (
+            isinstance(value, str) and TEMPLATE_PATTERN.fullmatch(value)
+        ):
+            issues.append(f"{path}.with.object must be an object or exact template")
+    if "keys" not in arguments:
+        issues.append(f"{path}.with.keys is required for pick")
+    else:
+        keys = arguments["keys"]
+        if isinstance(keys, str) and TEMPLATE_PATTERN.fullmatch(keys):
+            pass
+        elif not isinstance(keys, list):
+            issues.append(f"{path}.with.keys must be an array or exact template")
+        else:
+            for index, key in enumerate(keys):
+                if not isinstance(key, str):
+                    issues.append(f"{path}.with.keys[{index}] must be a string")
+    required = arguments.get("required")
+    if required is not None and not isinstance(required, (bool, str)):
+        issues.append(f"{path}.with.required must be a boolean or template")
+    elif isinstance(required, str) and not TEMPLATE_PATTERN.fullmatch(required):
+        issues.append(f"{path}.with.required must be a boolean or exact template")
 
 
 def _validate_templates(

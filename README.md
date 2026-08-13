@@ -11,7 +11,7 @@ on PyPI, so install it from a checkout or a locally built wheel.
 ## What it does
 
 - Validates a versioned JSON workflow before execution.
-- Runs `set` and `assert` steps in a fixed order.
+- Runs `set`, `assert`, `merge`, and `pick` steps in a fixed order.
 - Runs checked-in suites that prove expected outputs and expected failures.
 - Renders values from `input`, `defaults`, and completed `steps`.
 - Emits deterministic JSON with no timestamps, random IDs, or hidden state.
@@ -39,8 +39,10 @@ On macOS or Linux, use `.venv/bin/python` in place of `.venv\Scripts\python`.
 
 ```console
 .venv\Scripts\samsarix-spirals validate examples/hello.json
+.venv\Scripts\samsarix-spirals explain examples/agent-tool-result.json
 .venv\Scripts\samsarix-spirals run examples/hello.json --input examples/hello.input.json
 .venv\Scripts\samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json
+.venv\Scripts\samsarix-spirals test examples/agent-tool-result.json examples/agent-tool-result.suite.json
 .venv\Scripts\samsarix-spirals schema workflow --compact
 ```
 
@@ -51,6 +53,14 @@ The output's `output` field is:
   "message": "Hello, Ada!",
   "name": "Ada"
 }
+```
+
+Use `explain` during review to see every referenced input/default path and each step's
+direct dependencies without providing input or executing the workflow. The JSON report
+contains paths and operation names, not resolved values:
+
+```console
+samsarix-spirals explain workflow.json --compact
 ```
 
 Create a starter file without overwriting an existing path:
@@ -82,6 +92,13 @@ samsarix-spirals test workflow.json workflow.suite.json --junit
 
 See [`examples/release-policy.suite.json`](examples/release-policy.suite.json) for a
 release approval gate with both successful and rejected cases.
+[`examples/agent-tool-result.suite.json`](examples/agent-tool-result.suite.json) proves
+that an approved agent result is enriched, restricted to an explicit key allowlist, and
+rejected when required output is absent. Extra reasoning and credential-shaped fields
+never reach the workflow output.
+[`examples/repository-policy.suite.json`](examples/repository-policy.suite.json) models a
+production-repository security baseline and includes adversarial boolean/numeric,
+missing-field, public-visibility, and secret-shaped extra-field fixtures.
 
 ## JSON Schemas and CI reports
 
@@ -105,9 +122,10 @@ expected outputs, or actual outputs.
 ## Python API
 
 ```python
-from samsarix_spirals import load_workflow, run_workflow
+from samsarix_spirals import explain_workflow, load_workflow, run_workflow
 
 workflow = load_workflow("examples/hello.json")
+print(explain_workflow(workflow).input_paths)
 result = run_workflow(workflow, {"name": "Ada"})
 print(result.output)
 ```
@@ -130,6 +148,7 @@ output, and later steps do not run.
 ## Documentation
 
 - [Workflow format](docs/WORKFLOW_FORMAT.md)
+- [Compatibility and deprecation policy](docs/COMPATIBILITY.md)
 - [Competitive position and use cases](docs/COMPETITIVE_POSITIONING.md)
 - [Productization record](docs/PRODUCTIZATION.md)
 - [Release process](docs/RELEASING.md)
@@ -138,8 +157,8 @@ output, and later steps do not run.
 
 ## Project status and release boundary
 
-The core journey—install, validate, run, regression-test, inspect output—has local
-automated coverage.
+The core journey—install, validate, explain, run, regression-test, inspect output—has
+local automated coverage.
 Before publishing, a maintainer still needs to observe the GitHub Actions matrix on the
 target commit, confirm the distribution name is still available, create the tag, and
 publish through an owned package index account. Those external steps are intentionally

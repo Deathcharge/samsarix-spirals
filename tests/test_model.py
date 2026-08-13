@@ -106,6 +106,48 @@ def test_rejects_invalid_top_level_fields(change: dict[str, object], expected: s
             },
             "message must be a string",
         ),
+        ({"id": "good", "uses": "merge", "with": {}}, "objects is required"),
+        (
+            {"id": "good", "uses": "merge", "with": {"objects": {}}},
+            "objects must be an array or exact template",
+        ),
+        (
+            {"id": "good", "uses": "merge", "with": {"objects": [{}, 1]}},
+            r"objects\[1\] must be an object or exact template",
+        ),
+        (
+            {"id": "good", "uses": "merge", "with": {"objects": [], "extra": True}},
+            "unknown field",
+        ),
+        ({"id": "good", "uses": "pick", "with": {}}, "object is required"),
+        (
+            {"id": "good", "uses": "pick", "with": {"object": [], "keys": []}},
+            "object must be an object or exact template",
+        ),
+        (
+            {"id": "good", "uses": "pick", "with": {"object": {}, "keys": {}}},
+            "keys must be an array or exact template",
+        ),
+        (
+            {"id": "good", "uses": "pick", "with": {"object": {}, "keys": [1]}},
+            r"keys\[0\] must be a string",
+        ),
+        (
+            {
+                "id": "good",
+                "uses": "pick",
+                "with": {"object": {}, "keys": [], "required": 1},
+            },
+            "required must be a boolean or template",
+        ),
+        (
+            {
+                "id": "good",
+                "uses": "pick",
+                "with": {"object": {}, "keys": [], "required": "yes"},
+            },
+            "required must be a boolean or exact template",
+        ),
     ],
 )
 def test_rejects_invalid_steps(step: object, expected: str) -> None:

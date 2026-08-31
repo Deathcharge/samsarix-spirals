@@ -7,6 +7,10 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- Suite JSON failure codes and actual failing step IDs, with step context in human CLI,
+  JUnit and GitHub diagnostics. Passing-case shape, generic detail strings, suite
+  expectations and exit codes remain compatible. Runtime messages and fixture values
+  remain excluded; final/run-level errors are not assigned a fabricated step.
 - A dependency-free maintainer benchmark harness for CLI startup, fixture throughput,
   retained traces, report serialization and byte-budget rejection. Fresh-process OS
   memory counters and separate Python allocation measurements include raw samples and

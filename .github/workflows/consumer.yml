@@ -47,3 +47,6 @@ jobs:
         shell: bash
       - run: python tests/integration_smoke.py
         shell: bash
+      - name: Verify resource measurement harness (no speed threshold)
+        run: python -I tools/benchmark.py --samples 1
+        shell: bash

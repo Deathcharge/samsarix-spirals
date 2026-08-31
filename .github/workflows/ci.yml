@@ -57,12 +57,14 @@ jobs:
       - run: python -m twine check dist/*
       - run: python -m venv /tmp/samsarix-spirals-smoke
       - run: /tmp/samsarix-spirals-smoke/bin/python -m pip install --no-deps dist/*.whl
+      - run: /tmp/samsarix-spirals-smoke/bin/python -I tests/installed_smoke.py
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals validate examples/hello.json
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals explain examples/agent-tool-result.json --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals run examples/hello.json --input examples/hello.input.json --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json --json --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/release-policy.json examples/release-policy.suite.json --junit
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/agent-tool-result.json examples/agent-tool-result.suite.json --json --compact
+      - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals run examples/agent-tool-result.json --input examples/agent-tool-result.input.json --output-only --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/repository-policy.json examples/repository-policy.suite.json --json --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals schema workflow --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals schema suite --compact

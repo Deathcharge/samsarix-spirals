@@ -10,6 +10,8 @@
           "ticket_id": "INC-42",
           "summary": "Investigate latency regression",
           "priority": "high",
+          "source": "untrusted override",
+          "reviewed": false,
           "internal_reasoning": "must never leave the contract boundary",
           "credential": "must never leave the contract boundary"
         }
@@ -56,6 +58,16 @@
           "message_contains": "missing required key 'priority'"
         }
       }
+    },
+    {
+      "name": "numeric approval is not boolean approval",
+      "input": {"approved": 1},
+      "expect": {"error": {"step_id": "require_approval", "message_contains": "requires approval"}}
+    },
+    {
+      "name": "string approval is not boolean approval",
+      "input": {"approved": "true"},
+      "expect": {"error": {"step_id": "require_approval", "message_contains": "requires approval"}}
     }
   ]
 }

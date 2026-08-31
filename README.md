@@ -77,6 +77,26 @@ echo {"name":"Ada"} | .venv\Scripts\samsarix-spirals run examples/hello.json --i
 
 PowerShell users should prefer `'{"name":"Ada"}' | ...` so quoting is preserved.
 
+## Pass a final result to another system
+
+Use `--output-only` when piping a result to a downstream consumer:
+
+```console
+samsarix-spirals run examples/agent-tool-result.json --input examples/agent-tool-result.input.json --output-only --compact
+```
+
+This emits the raw final JSON value, without the `status`, `workflow`, or `steps` wrapper.
+The example keeps only the ticket fields and trusted policy metadata; private extra
+fields and metadata overrides from `result` do not reach this output. `approved` must be
+the JSON boolean `true`, supplied by a trusted caller, not by the agent itself. This tool
+checks data; it does not authenticate approvals or verify claims about an external system.
+
+Without `--output-only`, `run` preserves the full diagnostic step trace. That trace can
+contain values removed by a later `pick`; **do not send it to a downstream consumer as a
+redacted result**. In Python, consume `result.output`, not `result.to_dict()` or
+`result.steps`, for this boundary. The flag does not scrub final values or stderr:
+workflow authors must review allowed fields and avoid secrets in assertion messages.
+
 ## Regression suites
 
 A suite stores named inputs beside exact expected outputs or expected execution errors.
@@ -95,7 +115,7 @@ release approval gate with both successful and rejected cases.
 [`examples/agent-tool-result.suite.json`](examples/agent-tool-result.suite.json) proves
 that an approved agent result is enriched, restricted to an explicit key allowlist, and
 rejected when required output is absent. Extra reasoning and credential-shaped fields
-never reach the workflow output.
+never reach the final workflow output (use `--output-only` to omit intermediate traces).
 [`examples/repository-policy.suite.json`](examples/repository-policy.suite.json) models a
 production-repository security baseline and includes adversarial boolean/numeric,
 missing-field, public-visibility, and secret-shaped extra-field fixtures.

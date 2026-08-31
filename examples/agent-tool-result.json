@@ -24,8 +24,8 @@
       "uses": "merge",
       "with": {
         "objects": [
-          "{{ defaults.policy_metadata }}",
-          "{{ input.result }}"
+          "{{ input.result }}",
+          "{{ defaults.policy_metadata }}"
         ]
       }
     },

@@ -52,7 +52,7 @@
       "expect": {
         "error": {
           "step_id": "private_visibility",
-          "message_contains": "must not be public"
+          "message_contains": "must be private"
         }
       }
     },
@@ -97,6 +97,33 @@
           "message_contains": "secret_scanning"
         }
       }
+    },
+    {
+      "name": "null archive status is rejected",
+      "input": {"repository": {"archived": null}},
+      "expect": {"error": {"step_id": "active"}}
+    },
+    {
+      "name": "unknown visibility is rejected",
+      "input": {"repository": {"archived": false, "visibility": "typo"}},
+      "expect": {"error": {"step_id": "private_visibility"}}
+    },
+    {
+      "name": "string false is not code-owner enforcement",
+      "input": {
+        "repository": {"archived": false, "visibility": "private"},
+        "protection": {"required_reviews": 2, "require_code_owner_reviews": "false"}
+      },
+      "expect": {"error": {"step_id": "code_owners"}}
+    },
+    {
+      "name": "string false is not secret scanning",
+      "input": {
+        "repository": {"archived": false, "visibility": "private"},
+        "protection": {"required_reviews": 2, "require_code_owner_reviews": true},
+        "security": {"secret_scanning": "false"}
+      },
+      "expect": {"error": {"step_id": "secret_scanning"}}
     }
   ]
 }

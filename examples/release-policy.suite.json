@@ -45,6 +45,11 @@
           "message_contains": "version is required"
         }
       }
+    },
+    {
+      "name": "numeric approval is rejected",
+      "input": {"version": "1.4.0", "commit": "abc123", "approved": 1},
+      "expect": {"error": {"step_id": "require_approval", "message_contains": "approval is required"}}
     }
   ]
 }

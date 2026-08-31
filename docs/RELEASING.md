@@ -33,7 +33,12 @@ python -m venv .release-venv
 .release-venv\Scripts\python -m pip install --no-deps dist/samsarix_spirals-0.1.0-py3-none-any.whl
 .release-venv\Scripts\samsarix-spirals validate examples/hello.json
 .release-venv\Scripts\samsarix-spirals run examples/hello.json --input examples/hello.input.json
+.release-venv\Scripts\python -I tests/installed_smoke.py
 ```
+
+The isolated subprocess smoke check verifies final-output-only serialization, numeric
+approval rejection without partial stdout, and every checked-in example suite. Its
+subprocesses use `-I` to prevent a source-path override from hiding a broken wheel.
 
 Remove the disposable environment afterward. On macOS or Linux, use `.release-venv/bin/`.
 

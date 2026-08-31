@@ -9,6 +9,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from ._json import json_equal
 from .errors import WorkflowExecutionError
 from .model import (
     DEFAULT_MAX_RUN_STEPS,
@@ -189,9 +190,9 @@ def _pick_keys(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValue:
 
 def _evaluate_assertion(value: JsonValue, operator: str, expected: JsonValue) -> bool:
     if operator == "equals":
-        return value == expected
+        return json_equal(value, expected)
     if operator == "not_equals":
-        return value != expected
+        return not json_equal(value, expected)
     if operator == "truthy":
         return bool(value)
     if operator == "falsy":
@@ -204,7 +205,7 @@ def _evaluate_assertion(value: JsonValue, operator: str, expected: JsonValue) ->
                 raise TypeError("contains on a string requires a string expected value")
             return expected in value
         if isinstance(value, list):
-            return expected in value
+            return any(json_equal(item, expected) for item in value)
         if isinstance(value, dict):
             if not isinstance(expected, str):
                 raise TypeError("contains on an object requires a string expected key")

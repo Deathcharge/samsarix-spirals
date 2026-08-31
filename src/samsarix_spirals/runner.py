@@ -111,7 +111,9 @@ def run_workflow(
         remaining_output_bytes = _consume_output_bytes(
             output, remaining_output_bytes, step_id=step.id
         )
-        step_outputs[step.id] = copy.deepcopy(output)
+        # Both indexes are private until the run returns. Every context read goes
+        # through the cloning renderer, so a second retained tree is unnecessary.
+        step_outputs[step.id] = output
         results.append(StepResult(id=step.id, operation=step.uses, output=output))
 
     if workflow.output_defined:
@@ -123,8 +125,9 @@ def run_workflow(
 
 
 def _execute_step(step: Step, arguments: dict[str, JsonValue]) -> JsonValue:
+    """Consume detached, run-owned arguments; outputs may take ownership of their nodes."""
     if step.uses == "set":
-        return copy.deepcopy(arguments)
+        return arguments
     if step.uses == "merge":
         return _merge_objects(arguments, step_id=step.id)
     if step.uses == "pick":
@@ -151,7 +154,7 @@ def _execute_step(step: Step, arguments: dict[str, JsonValue]) -> JsonValue:
                 else f"assertion {operator!r} failed"
             )
             raise WorkflowExecutionError(detail, step_id=step.id)
-        return {"passed": True, "value": copy.deepcopy(value)}
+        return {"passed": True, "value": value}
     raise WorkflowExecutionError(  # pragma: no cover - validated model invariant
         f"unsupported operation {step.uses!r}", step_id=step.id
     )
@@ -239,7 +242,7 @@ def _merge_objects(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValu
             raise WorkflowExecutionError(
                 f"merge objects[{index}] must render to an object", step_id=step_id
             )
-        merged.update(copy.deepcopy(value))
+        merged.update(value)
         if len(merged) > MAX_COLLECTION_ITEMS:
             raise WorkflowExecutionError(
                 f"merged object exceeds the {MAX_COLLECTION_ITEMS}-key limit", step_id=step_id
@@ -274,7 +277,7 @@ def _pick_keys(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValue:
                     f"pick object is missing required key {key!r}", step_id=step_id
                 )
             continue
-        selected[key] = copy.deepcopy(value[key])
+        selected[key] = value[key]
     return selected
 
 

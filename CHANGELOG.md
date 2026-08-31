@@ -12,6 +12,9 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Fixed
 
+- Template expansion now accounts for the surrounding tree's depth when cloning an
+  input or prior-step value. Individually valid trees can no longer compose into results
+  exceeding the documented nesting limit, including explicit final output templates.
 - Assertions now use the same JSON equality as suite expectations, including array
   membership and nested values. `1`/`0` no longer satisfy `true`/`false` approval gates;
   numeric `1` and `1.0` still compare equal. Workflows relying on Python's former

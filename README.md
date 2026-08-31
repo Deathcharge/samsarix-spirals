@@ -8,6 +8,9 @@ automation or durable distributed orchestration.
 Version `0.1.0` is a source release candidate. The package is not currently published
 on PyPI, so install it from a checkout or a locally built wheel.
 
+For a pinned trial with deliberate failure cases and a way to record whether it helps
+your team, start with [Evaluate in your repository](docs/EVALUATION.md).
+
 ## What it does
 
 - Validates a versioned JSON workflow before execution.
@@ -199,6 +202,7 @@ for Unicode, repeated-output, and memory-limit details.
 
 ## Documentation
 
+- [First evaluation and adoption evidence](docs/EVALUATION.md)
 - [Pinned GitHub Action and pre-commit integration](docs/REPOSITORY_INTEGRATIONS.md)
 - [Resource measurements and operating guidance](docs/PERFORMANCE.md)
 - [Workflow format](docs/WORKFLOW_FORMAT.md)

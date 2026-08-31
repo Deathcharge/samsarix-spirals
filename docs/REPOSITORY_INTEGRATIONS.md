@@ -2,8 +2,8 @@
 
 Use these integrations to check a workflow and its regression suite alongside application
 code. They validate fixtures, not live repository settings or real publishing permissions.
-The examples pin the first integration implementation at commit
-`13e4858b7c240c372c281f3ec231003042f8787c`; review and update that full SHA deliberately.
+The examples pin the verified source candidate at commit
+`4ef5f51ef12778a72825b2c687028454d5fd3858`; review and update that full SHA deliberately.
 No package-index publication is required.
 
 ## GitHub Action
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: Deathcharge/samsarix-spirals@13e4858b7c240c372c281f3ec231003042f8787c
+      - uses: Deathcharge/samsarix-spirals@4ef5f51ef12778a72825b2c687028454d5fd3858
         with:
           workflow: examples/release-targets.json
           suite: examples/release-targets.suite.json
@@ -69,7 +69,7 @@ or newer is available. Add this to the consumer's `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/Deathcharge/samsarix-spirals
-    rev: 13e4858b7c240c372c281f3ec231003042f8787c
+    rev: 4ef5f51ef12778a72825b2c687028454d5fd3858
     hooks:
       - id: samsarix-spirals-test
         name: Release target contract
@@ -117,8 +117,15 @@ Maintainers can run `python tests/integration_smoke.py` after committing the imp
 It creates a temporary Git consumer and hook cache, installs the committed hook through
 real pre-commit, verifies success, deliberately wrong expectations, and invalid JSON, then
 removes only those temporary fixtures. `Consumer integrations` CI exercises the actual
-composite action and fresh hook on all three hosted OS families. Synthetic consumers
+composite action and fresh hook on all three hosted OS families. Run
+`python tests/integration_smoke.py --documented-pin` to test the exact documented
+pre-commit revision, including its failure codes and step context. The commit must be
+present locally; CI fetches history for this check. Pin-consistency tests keep the Action,
+hook, evaluation guide and public consumer CI examples aligned. Synthetic consumers
 prove integration behavior, not independent adoption or product-market fit.
+
+For a first evaluation and an optional, privacy-conscious feedback report, see
+[Evaluate in your repository](EVALUATION.md).
 
 References: [GitHub composite actions](https://docs.github.com/en/actions/tutorials/create-actions/create-a-composite-action),
 [workflow-command escaping](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands),

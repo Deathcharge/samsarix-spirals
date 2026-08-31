@@ -21,6 +21,55 @@ and publishes the artifacts.
 The starting-state audit and original verification below are historical evidence, not
 the current feature inventory. The latest revalidation is recorded in the next section.
 
+## 2026-08-31 follow-up: an executable independent-evaluation path
+
+Starting commit `4ef5f51` was clean, with green post-merge CI and consumer integrations,
+retained three-platform candidate bundles, no open PRs/issues and no GitHub release.
+The previous milestone was concrete progress, not completion of the adoption objective.
+
+The completion audit found a P1 onboarding mismatch: the integration guide described
+failure codes and step context but pinned `13e4858`, whose `CaseResult` predates those
+fields. Updated the Action and hook examples to verified candidate `4ef5f51`. CI now
+tests that exact documented hook revision in addition to HEAD; consistency tests cover
+the guide, public Action consumer and evaluation checkout pins. This does not create a
+release or silently advance a consumer's own pin.
+
+Added a short [evaluation guide](EVALUATION.md) with pinned installation, known success,
+deliberate failure/recovery fixtures, one-rule migration, side-by-side comparison with
+the prior check, and rollback boundaries. An optional public evaluation issue template
+asks for non-sensitive evidence and explicitly welcomes unsuccessful trials. No users
+were contacted, repositories enrolled, reports fabricated, or telemetry introduced.
+The roadmap now marks already-shipped step diagnostics and candidate evidence accurately;
+SARIF remains deferred until there is a consumer requirement.
+
+The GitHub private-vulnerability-reporting API returned `enabled: false` during this
+audit; the documented support email remains the private channel. No repository setting
+was changed. This verifies the setting but does not enable it or establish an SLA.
+The roadmap's three independent consumers, 30-day record, 100 real executions, written
+before/after assessment, and published release evidence remain unverified external gates.
+
+Local verification on Windows CPython 3.14.7:
+
+- `python -m pytest -q`: **370 passed, four intentional input-schema skips, 97.40%**
+  runtime branch coverage. Nine new cases verify pin consistency, missing-history
+  handling, and the guide's exact JSON failure/recovery examples through the CLI.
+- `python tests/integration_smoke.py --documented-pin`: fresh real pre-commit install,
+  success, output mismatch, actual step/privacy diagnostics and invalid-JSON handling
+  passed at `4ef5f51`. Running the same diagnostic contract against old pin `13e4858`
+  failed with `Installed hook omitted the output-mismatch failure code`, reproducing
+  the onboarding defect rather than merely changing a version string.
+- A new clone from GitHub, detached checkout of `4ef5f51`, fresh `python -m venv`, and
+  `python -m pip install -e .` passed the guide's `validate`, eight-case `test`, and
+  `run --output-only` commands. Final output was `["linux-x64", "windows-x64"]`.
+- Ruff format/lint, mypy (16 source files), Bandit source scan, compileall and
+  `git diff --check`: passed. Runtime code and dependencies are unchanged.
+- The sdist manifest now includes the roadmap and GitHub metadata needed by the
+  documentation links and pin-consistency tests; these are not added to the wheel.
+
+Hosted checks and committed-source packaging must still pass for the exact PR head and
+merged commit. Public release still needs publisher/rights confirmation and explicit
+publication authorization; no locally fabricated evidence can replace it.
+
 ## 2026-08-31 follow-up: repeatable candidate artifacts
 
 Baseline `da2a3ba` (PR #22): 331 tests passed, four intentional input-schema skips,

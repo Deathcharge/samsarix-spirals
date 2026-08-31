@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -31,13 +33,35 @@ def command(
     )
 
 
-def main() -> None:
+def documented_revision(text: str) -> str:
+    revisions = re.findall(r"^\s+rev: ([a-f0-9]{40})\s*$", text, re.MULTILINE)
+    if len(revisions) != 1:
+        raise ValueError("integration guide must contain exactly one full pre-commit revision")
+    return revisions[0]
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--documented-pin", action="store_true", help="test the guide's exact pre-commit revision"
+    )
+    args = parser.parse_args(argv)
     git = shutil.which("git")
     if git is None:
         raise RuntimeError("git is required for the pre-commit consumer test")
     revision = command([git, "rev-parse", "HEAD"], ROOT, dict(os.environ))
     if revision.returncode:
         raise RuntimeError(revision.stderr)
+    selected_revision = revision.stdout.strip()
+    if args.documented_pin:
+        selected_revision = documented_revision(
+            (ROOT / "docs" / "REPOSITORY_INTEGRATIONS.md").read_text(encoding="utf-8")
+        )
+        available = command(
+            [git, "cat-file", "-e", selected_revision + "^{commit}"], ROOT, dict(os.environ)
+        )
+        if available.returncode:
+            raise RuntimeError("documented commit is missing locally; fetch repository history")
     with TemporaryDirectory(prefix="samsarix-consumer-") as directory:
         consumer = Path(directory) / "consumer with spaces"
         consumer.mkdir()
@@ -56,7 +80,7 @@ def main() -> None:
             "repos": [
                 {
                     "repo": ROOT.as_uri(),
-                    "rev": revision.stdout.strip(),
+                    "rev": selected_revision,
                     "hooks": [
                         {
                             "id": "samsarix-spirals-test",
@@ -102,7 +126,10 @@ def main() -> None:
             raise RuntimeError(
                 f"Invalid document was not rejected:\n{invalid.stdout}\n{invalid.stderr}"
             )
-    print("Fresh consumer hook install, pass, mismatch, and invalid-document cases passed")
+    print(
+        f"Fresh consumer hook {selected_revision}: install, pass, mismatch, "
+        "step diagnostics, and invalid-document cases passed"
+    )
 
 
 if __name__ == "__main__":

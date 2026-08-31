@@ -7,6 +7,9 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- A pinned, opt-in repository evaluation guide with tested failure/recovery fixtures
+  and a privacy-conscious evaluation report template. Synthetic tests and self-reported
+  trials are explicitly distinguished from verified independent adoption.
 - Hash-pinned maintainer build tooling and a clean-commit candidate check that compares
   two wheel builds, smoke-tests the installed wheel, and retains artifact hashes and
   unsigned environment/source evidence. CI runs it on Linux, Windows and macOS; no
@@ -37,6 +40,9 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Fixed
 
+- Integration examples now pin a verified commit that actually includes the documented
+  failure codes and step diagnostics. CI exercises that exact hook revision as well as
+  current source, and tests keep Action/hook/evaluation pins aligned.
 - Resource-exhaustion hardening: rendered arguments/final values now have a 4 MiB
   encoded-payload cap, and retained step outputs plus final output have a combined
   16 MiB cap. Accounting includes JSON escaping and repeated copies. Previously valid

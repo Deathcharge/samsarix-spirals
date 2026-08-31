@@ -1,11 +1,13 @@
 include CHANGELOG.md
 include CONTRIBUTING.md
+include ROADMAP.md
 include NOTICE
 include SECURITY.md
 include tests/installed_smoke.py
 include tests/integration_smoke.py
 include action.yml
 include .pre-commit-hooks.yaml
+recursive-include .github *.yml *.md
 recursive-include integrations *.py
 recursive-include tools *.py
 recursive-include requirements *.lock

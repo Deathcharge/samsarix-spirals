@@ -241,7 +241,7 @@ def content_hash():
     """Identify actual source/fixtures/harness, including uncommitted edits, not just HEAD."""
     digest = hashlib.sha256()
     paths = [
-        Path(__file__),
+        Path(__file__).resolve(),
         *sorted((ROOT / "src").rglob("*.py")),
         *sorted((ROOT / "examples").glob("*.json")),
     ]

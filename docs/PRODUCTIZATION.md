@@ -110,9 +110,17 @@ The initial rejection probe failed because its expected diagnostic omitted the n
 limit; it now verifies the actual error category, budget wording and step. Bandit flagged
 the maintainer harness's subprocess import/call; the two low-severity checks are scoped out
 with an explicit fixed-interpreter/commands/no-shell rationale, not disabled globally.
-No product runtime code or dependencies changed. Full local tests pass: 290 passed,
+No product runtime code or dependencies changed. Full local tests pass: 291 passed,
 four intentional input-schema skips, 97.30% coverage on Python 3.14.7. Ruff, mypy and
 Bandit checks pass. Exact hosted and clean-package outcomes belong to this milestone PR.
+
+Final inspection found that a relative `__file__` supplied by `runpy` broke fingerprint
+inspection, although normal CLI runs worked. Resolving that path fixes the diagnostic
+without changing workload behavior; a regression test covers it. The recorded five-sample
+report deliberately retains its original `4cda66f` source fingerprint. A fresh wheel-only
+environment passed all installed examples, and the extracted sdist's benchmark ran without
+third-party dependencies. Existing-interpreter site initialization remains part of startup
+and process measurements; isolated mode is not a replacement for a clean environment.
 
 The [measurement guide](PERFORMANCE.md) records reproducible commands, raw evidence and
 operating caveats. Representative resource observations do not satisfy independent adoption,

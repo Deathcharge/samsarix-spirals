@@ -24,6 +24,13 @@ processes; it does not measure an arbitrary installed wheel. It also ships in th
 distribution, not the installed runtime package. Installed-package behavior is separately
 checked by `tests/installed_smoke.py`.
 
+Python `-I` ignores user-site packages and `PYTHON*` variables, but still performs the
+interpreter's system-site initialization. Use a fresh virtual environment when comparing
+revisions so unrelated installed `.pth` hooks do not affect startup or process overhead.
+The recorded desktop observation below used the existing development interpreter, not a
+clean virtual environment. A later wheel-only environment showed different base memory;
+that is another reason not to treat these observations as universal runtime requirements.
+
 Reports include raw samples, UTC start time, interpreter/platform metadata, and a SHA-256
 fingerprint of the harness, Python sources, and example JSON (with CRLF normalized to LF).
 The fingerprint identifies actual content, including uncommitted changes; it is not a
@@ -128,7 +135,8 @@ trace-copy costs and combined-limit workloads before making stronger capacity cl
   `job count × billed duration × your runner rate`. Include provisioning, file validation,
   report emission and retries. Spirals itself has no service/API usage fees or telemetry.
 
-Measurement references: Python's [performance clock](https://docs.python.org/3/library/time.html#time.perf_counter_ns),
+Measurement references: Python's [isolated-mode boundary](https://docs.python.org/3/using/cmdline.html#cmdoption-I),
+[performance clock](https://docs.python.org/3/library/time.html#time.perf_counter_ns),
 [allocation tracing](https://docs.python.org/3/library/tracemalloc.html),
 [Unix resource counters](https://docs.python.org/3/library/resource.html),
 [Linux maximum RSS units](https://man7.org/linux/man-pages/man2/getrusage.2.html),

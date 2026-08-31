@@ -135,3 +135,10 @@ def test_source_changes_invalidate_measurement(monkeypatch):
     monkeypatch.setattr(benchmark, "invoke", lambda _: next(responses))
     with pytest.raises(RuntimeError, match="changed during measurement"):
         benchmark.collect(1, ("release_suite",))
+
+
+def test_fingerprint_accepts_relative_script_metadata(monkeypatch):
+    expected = benchmark.content_hash()
+    monkeypatch.chdir(SCRIPT.parents[1])
+    monkeypatch.setattr(benchmark, "__file__", "tools/benchmark.py")
+    assert benchmark.content_hash() == expected

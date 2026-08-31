@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from xml.etree import ElementTree
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
@@ -88,6 +89,41 @@ def main() -> None:
     if json.loads(explanation.stdout)["steps"][1].get("item_paths") != ["item.name"]:
         raise RuntimeError("Installed CLI omitted scoped item paths")
     with TemporaryDirectory(prefix="samsarix-budget-smoke-") as directory:
+        suite_path = Path(directory) / "failure-context.suite.json"
+        suite_path.write_text(
+            json.dumps(
+                {
+                    "suite_version": 1,
+                    "name": "installed diagnostics",
+                    "cases": [
+                        {
+                            "name": "unapproved",
+                            "input": {"approved": False},
+                            "expect": {"output": {}},
+                        },
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        for mode in ["--json", "--junit"]:
+            diagnostic = invoke("test", workflow, str(suite_path), mode)
+            if diagnostic.returncode != 1 or diagnostic.stderr:
+                raise RuntimeError("Installed CLI failure diagnostic had incorrect exit status")
+            if "agent result requires approval" in diagnostic.stdout:
+                raise RuntimeError("Installed suite report disclosed the runtime assertion message")
+            if mode == "--json":
+                case = json.loads(diagnostic.stdout)["cases"][0]
+                if (case.get("failure_code"), case.get("step_id")) != (
+                    "unexpected_execution_error",
+                    "require_approval",
+                ):
+                    raise RuntimeError("Installed JSON report omitted failure context")
+            else:
+                root = ElementTree.fromstring(diagnostic.stdout)  # noqa: S314 - local CLI output
+                failure = root.find("testcase/failure")
+                if failure is None or '[step "require_approval"]' not in (failure.text or ""):
+                    raise RuntimeError("Installed JUnit report omitted the failing step")
         path = Path(directory) / "budget.json"
         for count, steps, message in [(50, 1, "rendered value"), (30, 6, "combined output")]:
             document = {
@@ -121,7 +157,9 @@ def main() -> None:
                 or "byte limit" not in oversized.stderr
             ):
                 raise RuntimeError(f"Installed CLI did not enforce {message} byte budget")
-    print(f"Installed CLI boundaries, byte budgets, and {len(suite_paths)} example suites passed")
+    print(
+        f"Installed CLI boundaries, diagnostics, byte budgets, and {len(suite_paths)} suites passed"
+    )
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.github_annotations:
         for case in [case for case in result.cases if not case.passed][:10]:
             # Quoting names also escapes terminal controls and lone Unicode surrogates.
-            _annotation(f"Case {json.dumps(case.name, ensure_ascii=True)}: {case.detail}")
+            _annotation(f"Case {json.dumps(case.name, ensure_ascii=True)}: {case.diagnostic}")
         if result.failed > 10:
             _annotation(f"{result.failed - 10} additional failures; see the JSON report.")
     return 0 if result.successful else 1

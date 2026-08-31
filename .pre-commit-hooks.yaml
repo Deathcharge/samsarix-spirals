@@ -1,0 +1,8 @@
+- id: samsarix-spirals-test
+  name: Samsarix Spirals contract suite
+  description: Run the configured workflow and suite with a value-redacted JSON report
+  entry: samsarix-spirals-ci
+  language: python
+  pass_filenames: false
+  always_run: true
+  require_serial: true

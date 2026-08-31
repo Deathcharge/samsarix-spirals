@@ -72,6 +72,31 @@ results still succeed. A further case verifies merged objects cannot exceed the 
 unreachable. Local pytest after this follow-up: 164 passed, 3 intentional schema skips,
 96.83% coverage on Python 3.14.7.
 
+### Follow-up: repository integration
+
+The checkout had no Action or hook manifest, so each adopter needed installation and
+invocation glue. Added a composite Action pinned to its own source revision and a
+Python pre-commit hook, with a dedicated one-line CI report command. GitHub path inputs
+are environment values rather than shell fragments; isolated Python imports only the
+action source, and document paths must resolve inside the consumer workspace. Reports
+omit fixture values and escape control characters; bounded annotations identify cases,
+not fabricated source locations. Core operation semantics and runtime dependencies are
+unchanged. The hook's managed installation still downloads build tooling when needed.
+
+The consumer test installs the committed hook in a temporary Git checkout and checks
+passing, mismatched, and invalid documents. Its first Windows run caught an invalid
+cache-directory name from using an absolute interpreter as `language_version`; the
+harness now uses a portable `pythonX.Y` name. This was test-harness portability, not a
+runtime contract failure. Dedicated CI exercises the real Action and hook on Linux,
+Windows, and macOS; exact outcomes belong to the milestone PR, not assumed from YAML.
+
+Local regression tests: 272 passed, four intentional input-schema skips, 97.30%
+coverage on Python 3.14.7, including symlink escape, import shadowing, missing inputs,
+malicious labels, and annotation caps. `ci.py` has full branch coverage in that run.
+The implementation was committed separately so consumer instructions can use a real
+immutable source SHA without a circular self-reference. These synthetic consumers do
+not satisfy the independent-repository or 30-day adoption gates.
+
 ### Follow-up: bounded list shaping
 
 The prior checkout could project a single object but could not express a batch

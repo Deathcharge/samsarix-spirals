@@ -3,6 +3,10 @@ include CONTRIBUTING.md
 include NOTICE
 include SECURITY.md
 include tests/installed_smoke.py
+include tests/integration_smoke.py
+include action.yml
+include .pre-commit-hooks.yaml
+recursive-include integrations *.py
 recursive-include docs *.md
 recursive-include examples *.json
 recursive-include src/samsarix_spirals/schemas *.json

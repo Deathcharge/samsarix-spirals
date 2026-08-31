@@ -7,6 +7,11 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- A SHA-pinned composite GitHub Action and Python pre-commit hook for workflow suites,
+  plus the `samsarix-spirals-ci` single-line reporting command. The Action uses isolated
+  pinned source, workspace-contained inputs, and escaped/bounded failure annotations.
+- Fresh-consumer integration tests and Linux/Windows/macOS hosted verification; complete
+  setup instructions distinguish source pinning from locked/offline environment builds.
 - Bounded `map`/`filter` list operations with scoped `item` templates, shared output/work
   budgets, fail-fast indexed errors, and JSON comparison semantics. `normalize` applies
   ordered ASCII trim/lower/upper transforms to strings or string arrays. These are

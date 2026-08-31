@@ -59,7 +59,8 @@ this boundary.
 
 ### 0.4 — Repository adoption
 
-- Ship a pinned GitHub Action and documented pre-commit integration.
+- [x] Ship a pinned GitHub Action and documented pre-commit integration.
+- [x] Add escaped, bounded case-failure annotations for GitHub Actions.
 - Add stable SARIF or annotation output for step-scoped failures.
 - Publish signed distributions and an SBOM through an owned package-index account.
 - Measure startup time, maximum-memory behavior, and fixture-suite throughput.

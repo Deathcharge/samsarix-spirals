@@ -1,0 +1,49 @@
+name: Consumer integrations
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action:
+    name: Action (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Passing suite
+        uses: ./
+        with:
+          workflow: examples/release-targets.json
+          suite: examples/release-targets.suite.json
+      - name: Pinned public Action consumer
+        uses: Deathcharge/samsarix-spirals@13e4858b7c240c372c281f3ec231003042f8787c
+        with:
+          workflow: examples/release-targets.json
+          suite: examples/release-targets.suite.json
+      - name: Missing document must fail
+        id: missing
+        continue-on-error: true
+        uses: ./
+        with:
+          workflow: does-not-exist.json
+          suite: examples/release-targets.suite.json
+      - name: Verify failure propagation
+        if: steps.missing.outcome != 'failure'
+        shell: bash
+        run: exit 1
+      - run: python -m pip install pre-commit==4.6.1
+        shell: bash
+      - run: python -m pre_commit validate-manifest .pre-commit-hooks.yaml
+        shell: bash
+      - run: python tests/integration_smoke.py
+        shell: bash

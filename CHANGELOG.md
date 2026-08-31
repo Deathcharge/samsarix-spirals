@@ -7,6 +7,10 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- Hash-pinned maintainer build tooling and a clean-commit candidate check that compares
+  two wheel builds, smoke-tests the installed wheel, and retains artifact hashes and
+  unsigned environment/source evidence. CI runs it on Linux, Windows and macOS; no
+  package publishing, signed provenance, or cross-environment reproducibility is claimed.
 - Suite JSON failure codes and actual failing step IDs, with step context in human CLI,
   JUnit and GitHub diagnostics. Passing-case shape, generic detail strings, suite
   expectations and exit codes remain compatible. Runtime messages and fixture values

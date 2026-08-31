@@ -8,6 +8,7 @@ include action.yml
 include .pre-commit-hooks.yaml
 recursive-include integrations *.py
 recursive-include tools *.py
+recursive-include requirements *.lock
 recursive-include docs *.md *.json
 recursive-include examples *.json
 recursive-include src/samsarix_spirals/schemas *.json

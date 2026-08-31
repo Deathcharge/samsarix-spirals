@@ -21,6 +21,56 @@ and publishes the artifacts.
 The starting-state audit and original verification below are historical evidence, not
 the current feature inventory. The latest revalidation is recorded in the next section.
 
+## 2026-08-31 follow-up: repeatable candidate artifacts
+
+Baseline `da2a3ba` (PR #22): 331 tests passed, four intentional input-schema skips,
+97.40% runtime branch coverage; hosted CI and consumer integrations passed. Builds still
+resolved tool-version ranges and discarded their artifacts, leaving no retained evidence
+binding a tested wheel to its source commit. This was a P1 release-process gap, not a
+runtime feature deficiency.
+
+Added six exact wheel/hash pins in `requirements/build.lock`, a maintainer-only
+`tools/release_check.py`, and focused failure-path tests. The helper exports a clean Git
+commit twice, uses the pinned build tools with a commit-derived timestamp, requires
+byte-identical wheels, smoke-tests the installed candidate, and emits artifact hashes
+plus an unsigned JSON report. Source-archive byte equality is reported separately and
+not asserted as a release gate. The runtime package and its dependency policy are
+unchanged. Three-platform CI candidate checks retain four evidence/artifact files for
+14 days; existing test, audit, build/twine and consumer checks remain in place.
+
+[Release instructions](RELEASING.md) distinguish these candidate builds from ordinary
+development builds, PR merge refs from release commits, and unsigned checksums from
+publisher authentication. Python/pip/OS are not locked; this is a same-environment wheel
+repeatability check, not a hermetic build or signed provenance. Package publication,
+signing, ownership confirmation, and independent-user validation remain external gates.
+
+Local verification on Windows CPython 3.14.7, implementation commit `27a26db`:
+
+- `python -m pytest -q`: **361 passed, four intentional input-schema skips, 97.40%**
+  runtime branch coverage; 30 of these tests exercise maintainer release-tool boundaries.
+- `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy`
+  (16 source files), `python -m bandit -q -r src`,
+  `python -m bandit -q tools/release_check.py`, and
+  `python -m compileall -q src tests tools`: passed.
+- `python -m pip_audit -r requirements/build.lock`: no known vulnerabilities reported.
+- Fresh `python -m venv` and builder `python -m pip install --require-hashes
+  --only-binary=:all: -r requirements/build.lock`: all six pinned wheels installed.
+- Builder `python -I tools/release_check.py --output-dir <new external directory>`:
+  passed dependency consistency, both sdist-to-wheel builds, identical wheel bytes,
+  isolated installed CLI boundary checks and all four example suites. Source archive
+  bytes differed (`sdist_bytes_identical: false`), with no claim otherwise.
+- `python -m twine check <candidate>/*.whl <candidate>/*.tar.gz`: both passed. Use
+  distribution-only patterns: a trial `candidate/*` also included the JSON evidence,
+  correctly rejected by Twine as a non-distribution.
+- Candidate wheel: 36,915 bytes, SHA-256
+  `7f1095eb9c8772eb595bf2ea803a0746b304fe0bfd17a62bfb5eacda15ea9f8d`.
+  These bytes identify this local environment/commit only, not future release artifacts.
+
+Hosted results for the exact PR and eventual merged commit are tracked in
+[PR #23](https://github.com/Deathcharge/samsarix-spirals/pull/23); they must be observed
+green before release. No publication occurred. Publisher authentication and independent
+adoption evidence remain the next gates, not further expansion of the pure runner.
+
 ## 2026-08-31 revalidation and contract-boundary corrections
 
 The starting revision for this pass was `d3b7b28`, with a clean worktree and no open PRs.
@@ -520,7 +570,8 @@ Non-blocking post-0.1 candidates:
 - extend schema conformance coverage as new operations are added (structural schemas
   already ship in the wheel);
 - add property-based parser/template tests if a runtime dependency policy permits it;
-- add reproducible-build/SBOM attestations after a publishing system is chosen;
+- add publisher-signed provenance/SBOM after a publishing system is chosen; same-environment
+  wheel repeatability and unsigned artifact evidence now have a local/CI verification path;
 - consider JSON Pointer syntax in a future schema version for keys containing dots.
 
 These items do not justify broadening 0.1 into a service or integration platform.

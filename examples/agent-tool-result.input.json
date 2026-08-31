@@ -1,0 +1,12 @@
+{
+  "approved": true,
+  "result": {
+    "ticket_id": "INC-42",
+    "summary": "Investigate latency regression",
+    "priority": "high",
+    "source": "untrusted override",
+    "reviewed": false,
+    "internal_reasoning": "example-only private context",
+    "credential": "example-only excluded field"
+  }
+}

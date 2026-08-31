@@ -1,6 +1,6 @@
 # Productization record
 
-Last updated: 2026-07-28
+Last updated: 2026-08-31
 
 ## Current disposition
 
@@ -8,17 +8,63 @@ Samsarix Spirals is now a **local 0.1.0 source release candidate** for a determi
 side-effect-free JSON workflow runner. Its supported journey is:
 
 1. install the package on Python 3.11 or newer;
-2. validate a checked-in workflow;
-3. run it with a JSON input object;
-4. consume or inspect deterministic JSON output.
+2. validate and statically explain a checked-in workflow;
+3. run regression suites with expected success and failure cases;
+4. run it with a JSON input object;
+5. consume final JSON via `--output-only`, or inspect the full diagnostic trace locally.
 
 Local quality gates and a clean-wheel smoke test are release requirements. A public
 release is not claimed until the exact commit passes the hosted CI matrix, the package
 name and publisher account are confirmed, and an authorized maintainer creates the tag
 and publishes the artifacts.
 
-This document is the durable record of the 2026-07-28 productization pass. It should be
-updated when the product boundary, release evidence, or blocker disposition changes.
+The starting-state audit and original verification below are historical evidence, not
+the current feature inventory. The latest revalidation is recorded in the next section.
+
+## 2026-08-31 revalidation and contract-boundary corrections
+
+The starting revision for this pass was `d3b7b28`, with a clean worktree and no open PRs.
+The intervening merged work added regression suites, JSON Schemas, JUnit reports, object
+shaping, static explanations, realistic policy examples, and compatibility guidance.
+The GitHub repository already uses `Deathcharge/samsarix-spirals`; no slug rename remains.
+
+Baseline: `python -m pytest -q` passed 114 tests, skipped two input-file schema checks,
+and measured 96.79% branch-aware coverage on Python 3.14.7. Passing that suite did not
+prove the advertised data boundaries: direct public-API reproductions showed all three
+of the following, subsequently captured in failing regression tests:
+
+| Priority | Observed gap | Correction |
+| --- | --- | --- |
+| P1 | Numeric `1` satisfied literal boolean approval in `assert`, while suites treated the types differently. | Share recursive JSON equality across assertions, array membership, and suite expectations. |
+| P1 | An earlier merge output retained credential-shaped fields in CLI stdout after a final allowlist removed them. | Add `run --output-only` and document final values versus diagnostic traces; preserve the existing trace interface. |
+| P1 | Agent result data overwrote trusted policy metadata; repository gates accepted truthy strings and unknown visibility. | Apply trusted metadata last and use explicit boolean/private-state gates, with portable negative fixtures. |
+| P1 | The living record and security boundary still described only the initial two-operation core. | Refresh the supported surface, evidence, disclosure caveats, and release blockers. |
+
+The new boundary test module initially produced 27 failures and 15 passes, demonstrating
+that it catches the defects and missing CLI mode before implementation. The complete
+suite after corrections passes 156 tests at 96.96% coverage (additional input schema
+fixtures are intentionally skipped). Exact final package and hosted-CI evidence is
+recorded in the pull request for this pass; do not infer publication from a green PR.
+
+Bounded primary-source research was refreshed on 2026-08-31:
+
+- [JSON Schema boolean semantics](https://json-schema.org/understanding-json-schema/reference/boolean)
+  distinguish booleans from numeric truthy values, supporting the corrected JSON contract.
+- [CUE's validation command](https://cuelang.org/docs/reference/command/cue-help-vet/)
+  already validates several configuration formats and checks concreteness. Inference:
+  Spirals should earn adoption through its small, suite-tested JSON transformation path,
+  not claim broader validation capabilities than a mature constraint language.
+
+Next by value: finish bounded shaping after contract correctness, add pinned repository
+integration, measure real resource use, prepare reproducible publisher-owned artifacts,
+and validate the workflow in independently owned repositories. No production-readiness,
+external adoption, private reporting enablement, or package publication is asserted.
+
+Sustainability hypothesis (not validated demand): keep the MPL-covered local runner
+usable without an account; offer optional workflow migration, integration assistance,
+and support through Samsarix LLC. The core has no metered API or hosting cost, but uses
+the caller's CPU/memory and CI minutes. Do not add telemetry or a hosted subscription
+without a demonstrated customer need and an explicit operating boundary.
 
 ## Starting-state audit
 
@@ -159,13 +205,14 @@ fixture data, or enforcing a small precondition in a scriptable pipeline.
 - no implicit environment, network, process, plugin, credential, or persistence access;
 - bounded documents, nesting, collection sizes, and step counts.
 
-### Supported 0.1 surface
+### Supported checkout surface (package version remains 0.1.0; additions unreleased)
 
 - workflow schema version `1`;
-- ordered `set` and `assert` operations;
+- ordered `set`, `assert`, `merge`, and `pick` operations;
 - templates rooted at `input`, `defaults`, and completed `steps`;
-- CLI commands `validate`, `run`, and non-overwriting `init`;
-- typed Python entry points `load_workflow()` and `run_workflow()`;
+- CLI commands `validate`, `explain`, `run`, `test`, `schema`, and non-overwriting `init`;
+- typed Python workflow, suite, explanation, and schema discovery APIs;
+- bundled Draft 2020-12 structural schemas, JSON suite reports, and deterministic JUnit XML;
 - UTF-8 JSON files and JSON-object input from a file or standard input.
 
 ### Explicit non-goals
@@ -179,16 +226,18 @@ and credential boundary; it must not arrive as a generic URL or code escape hatc
 
 ## Architecture and data flow
 
-The package has four responsibility layers:
+The package has the following responsibility layers:
 
 1. `model.py` performs bounded UTF-8 JSON loading, duplicate-key rejection, structural
    validation, static template/reference checks, and defensive copying.
-2. `runner.py` renders validated values, executes two in-memory operations sequentially,
+2. `runner.py` renders validated values, executes in-memory operations sequentially,
    and returns immutable result records.
 3. `cli.py` maps files/stdin and exit codes onto the model and runner. `init` is the only
    command that writes a file and uses exclusive creation.
 4. `__init__.py` exposes the deliberately small Python API; `__main__.py` and the console
    entry point call the same CLI.
+5. `suite.py`, `schema.py`, and `explain.py` provide regression contracts, bundled
+   structural schemas, and static dependency inventories; `_json.py` shares JSON equality.
 
 Workflow input and defaults can flow into step output and final output. They cannot flow to
 the environment, network, a subprocess, dynamic import, database, credential store, or
@@ -247,7 +296,7 @@ samsarix-spirals validate examples/hello.json
 samsarix-spirals run examples/hello.json --input examples/hello.input.json --compact
 ```
 
-Current observed evidence:
+Historical initial-pass evidence (2026-07-28; see the revalidation above for current results):
 
 - Python 3.11.9 and 3.13.14 local environments;
 - Ruff formatting and lint: pass;
@@ -273,14 +322,13 @@ Release-blocking external checks:
 - have an authorized Samsarix LLC representative confirm that the company holds the rights
   needed to relicense all covered code under MPL-2.0, and obtain counsel review before the
   first public release if legal certainty is required;
-- rename the legacy GitHub repository slug and update repository URLs if the owner wants
-  the hosting URL to match the Samsarix package identity;
 - enable or verify GitHub private vulnerability reporting before advertising it as active;
 - decide whether release tags/artifacts must be signed and establish the publisher account.
 
 Non-blocking post-0.1 candidates:
 
-- publish a machine-readable JSON Schema generated from the tested contract;
+- extend schema conformance coverage as new operations are added (structural schemas
+  already ship in the wheel);
 - add property-based parser/template tests if a runtime dependency policy permits it;
 - add reproducible-build/SBOM attestations after a publishing system is chosen;
 - consider JSON Pointer syntax in a future schema version for keys containing dots.

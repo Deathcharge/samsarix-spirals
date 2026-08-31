@@ -7,6 +7,22 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- `run --output-only` for piping the raw final JSON value without intermediate trace
+  entries; the default trace format remains compatible.
+
+### Fixed
+
+- Assertions now use the same JSON equality as suite expectations, including array
+  membership and nested values. `1`/`0` no longer satisfy `true`/`false` approval gates;
+  numeric `1` and `1.0` still compare equal. Workflows relying on Python's former
+  boolean/number equivalence must provide correctly typed inputs.
+- Agent policy metadata is applied after untrusted result data, so it cannot be replaced
+  by agent-supplied `source` or `reviewed` values.
+- Repository-policy fixtures now require literal boolean states and explicitly private
+  visibility, rejecting truthy strings, null archive state, and unknown visibility.
+
+### Previously added
+
 - Versioned, bounded workflow regression suites with exact-output and expected-error
   contracts through the Python API and `samsarix-spirals test` command.
 - A release-policy example that demonstrates a practical CI approval gate.

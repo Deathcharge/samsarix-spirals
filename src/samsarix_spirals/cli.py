@@ -88,6 +88,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar=f"1..{MAX_WORKFLOW_STEPS}",
     )
     run.add_argument("--compact", action="store_true", help="emit compact JSON")
+    run.add_argument(
+        "--output-only",
+        action="store_true",
+        help="emit only the final JSON value, excluding the intermediate step trace",
+    )
 
     test = commands.add_parser("test", help="run a workflow regression suite")
     test.add_argument("workflow", type=Path)
@@ -133,9 +138,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             input_data = _load_input(args.input)
             run_result = run_workflow(workflow, input_data, max_steps=args.max_steps)
             indent = None if args.compact else 2
-            print(
-                json.dumps(run_result.to_dict(), ensure_ascii=False, indent=indent, sort_keys=True)
-            )
+            payload = run_result.output if args.output_only else run_result.to_dict()
+            print(json.dumps(payload, ensure_ascii=False, indent=indent, sort_keys=True))
             return 0
         if args.command == "test":
             workflow = load_workflow(args.workflow)

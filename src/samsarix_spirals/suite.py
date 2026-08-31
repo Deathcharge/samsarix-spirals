@@ -12,6 +12,7 @@ from typing import cast
 # ElementTree only constructs reports; production code never parses XML input.
 from xml.etree import ElementTree  # nosec B405
 
+from ._json import json_equal
 from .errors import WorkflowExecutionError, WorkflowValidationError
 from .model import JsonValue, Workflow, load_json_object, validate_input_object, validate_json_value
 from .runner import run_workflow
@@ -256,7 +257,7 @@ def _run_case(workflow: Workflow, case: SuiteCase) -> CaseResult:
         return CaseResult(
             case.name, False, "workflow completed but an execution error was expected"
         )
-    if not _json_equal(result.output, case.expected_output):
+    if not json_equal(result.output, case.expected_output):
         return CaseResult(case.name, False, "workflow output did not equal expected output")
     return CaseResult(case.name, True)
 
@@ -290,25 +291,6 @@ def suite_result_to_junit_xml(result: SuiteResult, *, workflow: str) -> str:
             )
             failure.text = detail
     return ElementTree.tostring(root, encoding="unicode", xml_declaration=True)
-
-
-def _json_equal(actual: JsonValue, expected: JsonValue) -> bool:
-    if isinstance(actual, bool) or isinstance(expected, bool):
-        return type(actual) is type(expected) and actual == expected
-    if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
-        return actual == expected
-    if type(actual) is not type(expected):
-        return False
-    if isinstance(actual, list) and isinstance(expected, list):
-        return len(actual) == len(expected) and all(
-            _json_equal(actual_item, expected_item)
-            for actual_item, expected_item in zip(actual, expected, strict=True)
-        )
-    if isinstance(actual, dict) and isinstance(expected, dict):
-        return actual.keys() == expected.keys() and all(
-            _json_equal(actual[key], expected[key]) for key in actual
-        )
-    return actual == expected
 
 
 def _xml_safe(value: str) -> str:

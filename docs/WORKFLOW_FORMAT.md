@@ -86,6 +86,16 @@ Ordered operands must both be numbers or both strings. Booleans are not treated 
 numbers. A successful assertion exposes `{"passed": true, "value": ...}`. A failed
 assertion stops the workflow and makes the CLI exit `1`.
 
+`equals`, `not_equals`, array `contains`, and suite output expectations all use the same
+recursive JSON equality: `true` differs from `1`, `false` differs from `0`, and `1` equals
+`1.0`. Arrays compare in order and objects compare by keys and values independent of key
+order. This type distinction applies inside nested arrays and objects too.
+
+`truthy` and `falsy` intentionally test coercible truth values, not boolean types: the
+non-empty string `"false"` is truthy. For an approval or enabled-state gate, use `equals`
+with the literal `true` or `false`. Prefer an explicit allowed value for policy states
+(for example, `equals: "private"`) rather than excluding only a single bad value.
+
 ### `merge`
 
 `merge` requires `objects`, which must render to an array of objects. It creates a new
@@ -98,8 +108,8 @@ the value in the later object wins.
   "uses": "merge",
   "with": {
     "objects": [
-      {"source": "agent", "reviewed": true},
-      "{{ input.result }}"
+      "{{ input.result }}",
+      {"source": "agent", "reviewed": true}
     ]
   }
 }
@@ -108,6 +118,7 @@ the value in the later object wins.
 The operation is shallow: nested objects are replaced, not recursively merged. Inputs
 are copied, so later processing cannot mutate workflow defaults or prior step outputs.
 The normal collection and total-value budgets apply to the result.
+Place trusted policy values last when untrusted input must not override them.
 
 ### `pick`
 
@@ -129,6 +140,17 @@ top-level keys, in the order given by `keys`.
 and a missing key fails the step. Set `required` to `false` to omit missing keys instead.
 `pick` is an allowlist rather than a redaction list: every field that may leave the
 workflow boundary must be named explicitly.
+Selection is top-level only: naming an object-valued key retains that entire nested
+object. It does not recursively remove sensitive child fields.
+
+### Final output versus trace
+
+`run` normally serializes the final output together with every completed step output.
+Later selection cannot remove values from earlier trace entries. Use `run --output-only`
+to serialize only the raw final JSON value, or `RunResult.output` from Python. The default
+trace and `RunResult.to_dict()` remain useful for local diagnostics but are not redacted.
+Both output modes fail without partial stdout. Neither mode sanitizes values deliberately
+included in the final result, or input interpolated into custom assertion error messages.
 
 ## Templates
 

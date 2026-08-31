@@ -11,7 +11,8 @@
       "uses": "assert",
       "with": {
         "value": "{{ input.repository.archived }}",
-        "operator": "falsy",
+        "operator": "equals",
+        "expected": false,
         "message": "production repository must be active"
       }
     },
@@ -20,9 +21,9 @@
       "uses": "assert",
       "with": {
         "value": "{{ input.repository.visibility }}",
-        "operator": "not_equals",
-        "expected": "public",
-        "message": "production repository must not be public"
+        "operator": "equals",
+        "expected": "private",
+        "message": "production repository must be private"
       }
     },
     {
@@ -40,7 +41,8 @@
       "uses": "assert",
       "with": {
         "value": "{{ input.protection.require_code_owner_reviews }}",
-        "operator": "truthy",
+        "operator": "equals",
+        "expected": true,
         "message": "code-owner review is required"
       }
     },
@@ -49,7 +51,8 @@
       "uses": "assert",
       "with": {
         "value": "{{ input.security.secret_scanning }}",
-        "operator": "truthy",
+        "operator": "equals",
+        "expected": true,
         "message": "secret scanning is required"
       }
     },

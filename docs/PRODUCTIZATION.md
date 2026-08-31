@@ -97,6 +97,35 @@ The implementation was committed separately so consumer instructions can use a r
 immutable source SHA without a circular self-reference. These synthetic consumers do
 not satisfy the independent-repository or 30-day adoption gates.
 
+### Follow-up: measured resource behavior
+
+The baseline had documented encoded budgets but no reproducible measurement harness.
+Added a source-only, standard-library benchmark covering real release-contract fixtures,
+1,000-case batching, 10,000-item mapping, retained 100-step traces, compact trace
+serialization, and both encoded-output rejection paths. Each timing sample executes once
+in a fresh isolated interpreter; allocation tracing uses separate workers. OS peak memory
+includes process overhead and must not be presented as the 16 MiB encoded budget.
+
+The initial rejection probe failed because its expected diagnostic omitted the numeric
+limit; it now verifies the actual error category, budget wording and step. Bandit flagged
+the maintainer harness's subprocess import/call; the two low-severity checks are scoped out
+with an explicit fixed-interpreter/commands/no-shell rationale, not disabled globally.
+No product runtime code or dependencies changed. Full local tests pass: 291 passed,
+four intentional input-schema skips, 97.30% coverage on Python 3.14.7. Ruff, mypy and
+Bandit checks pass. Exact hosted and clean-package outcomes belong to this milestone PR.
+
+Final inspection found that a relative `__file__` supplied by `runpy` broke fingerprint
+inspection, although normal CLI runs worked. Resolving that path fixes the diagnostic
+without changing workload behavior; a regression test covers it. The recorded five-sample
+report deliberately retains its original `4cda66f` source fingerprint. A fresh wheel-only
+environment passed all installed examples, and the extracted sdist's benchmark ran without
+third-party dependencies. Existing-interpreter site initialization remains part of startup
+and process measurements; isolated mode is not a replacement for a clean environment.
+
+The [measurement guide](PERFORMANCE.md) records reproducible commands, raw evidence and
+operating caveats. Representative resource observations do not satisfy independent adoption,
+an independent security review, combined-maximum proofs or publication requirements.
+
 ### Follow-up: bounded list shaping
 
 The prior checkout could project a single object but could not express a batch

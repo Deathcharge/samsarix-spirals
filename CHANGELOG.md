@@ -7,6 +7,12 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- A dependency-free maintainer benchmark harness for CLI startup, fixture throughput,
+  retained traces, report serialization and byte-budget rejection. Fresh-process OS
+  memory counters and separate Python allocation measurements include raw samples and
+  source fingerprints; cross-platform CI checks outcomes without speed thresholds.
+- Resource-measurement documentation distinguishes encoded payload caps from RAM usage,
+  representative stress probes from worst-case proofs, and synthetic runs from adoption.
 - A SHA-pinned composite GitHub Action and Python pre-commit hook for workflow suites,
   plus the `samsarix-spirals-ci` single-line reporting command. The Action uses isolated
   pinned source, workspace-contained inputs, and escaped/bounded failure annotations.

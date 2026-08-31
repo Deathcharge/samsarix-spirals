@@ -63,7 +63,9 @@ this boundary.
 - [x] Add escaped, bounded case-failure annotations for GitHub Actions.
 - Add stable SARIF or annotation output for step-scoped failures.
 - Publish signed distributions and an SBOM through an owned package-index account.
-- Measure startup time, maximum-memory behavior, and fixture-suite throughput.
+- [x] Add reproducible startup, suite-throughput, allocation and OS peak-memory probes.
+- Extend resource measurements to combined limits and opt-in maximum-step workloads;
+  representative probes are not a universal memory ceiling.
 
 ### 1.0 — Supported contract
 

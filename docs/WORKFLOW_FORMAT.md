@@ -182,8 +182,8 @@ Schema version 1 has no escaping syntax for literal `{{` or `}}`.
 
 The CLI executes at most 100 steps by default. `--max-steps` can raise this cap up to
 the schema limit of 1,000. A validated or rendered string contains at most 100,000
-characters, and each validated or rendered JSON tree contains at most 50,000 values;
-these limits prevent template amplification. The runner performs no I/O after loading input, does not read
+characters, and each validated or rendered JSON tree contains at most 50,000 values.
+The runner performs no I/O after loading input, does not read
 environment variables, and does not add time, randomness, or identifiers to results.
 Given the same workflow, input, and run limit, its JSON value result is the same.
 
@@ -193,6 +193,34 @@ available to its referenced value. This also applies when wrapping prior-step ou
 and when rendering the final output; an over-depth composition fails before being emitted.
 
 Object key order is not semantic. The CLI sorts keys when serializing its result.
+
+### Encoded payload budgets
+
+Each step's rendered arguments and the explicit final rendered value are limited to
+**4 MiB (4,194,304 bytes)**. All retained step outputs plus the final output together
+are limited to **16 MiB (16,777,216 bytes)**. The implicit final copy of the last step
+counts again; earlier outputs still count when `--output-only` hides the trace. Limits
+are inclusive and reset on each run, including each regression-suite case.
+
+Accounting uses compact JSON with ASCII escaping (`ensure_ascii=True` and separators
+`(',', ':')`): object keys, quotes, punctuation, escaped controls, and Unicode escape
+sequences all count. This is a deterministic payload measure, not the CLI's formatting
+choice. Rendering is charged incrementally; cumulative accounting iterates encoded
+fragments instead of constructing another full serialized document. Even arguments
+discarded by `pick` or overwritten by `merge` must fit the per-render budget.
+
+Exceeding a budget raises an execution error (CLI exit `1`) without partial stdout.
+Step failures carry the step ID; final-output failures have no step ID. Reduce repeated
+data, select smaller inputs upstream, or split a batch into independent runs. There is
+no flag to disable these limits.
+
+These are not exact stdout-byte or process-memory limits: pretty-print whitespace,
+trace metadata, interpreter overhead, temporary copies, and caller-owned API objects
+are not included. They are also not CPU deadlines or an isolation sandbox. Apply OS
+resource limits when embedding the runner in a service; hostile multi-tenant hosting
+is not a supported deployment. API factories normalize validated mappings/tuples into
+detached JSON objects/arrays. Use those factories and do not mutate validated workflow
+internals; subsequently caller-mutated results are outside the execution guarantee.
 
 ## Static explanations
 

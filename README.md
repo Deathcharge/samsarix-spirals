@@ -165,6 +165,11 @@ top-level `schema_version` field and be documented in the changelog.
 Execution is fail-fast. A failed assertion produces no success document on standard
 output, and later steps do not run.
 
+Rendered arguments/final values have a 4 MiB encoded-payload budget, and retained step
+outputs plus final output have a combined 16 MiB budget. Budget failures also exit `1`
+with no partial stdout. See [limits and accounting](docs/WORKFLOW_FORMAT.md#encoded-payload-budgets)
+for Unicode, repeated-output, and memory-limit details.
+
 ## Documentation
 
 - [Workflow format](docs/WORKFLOW_FORMAT.md)

@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 import copy
+import json
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ._json import json_equal
 from .errors import WorkflowExecutionError
@@ -25,10 +26,15 @@ from .model import (
     validate_input_object,
 )
 
+MAX_RENDERED_BYTES = 4 * 1_048_576
+MAX_RUN_OUTPUT_BYTES = 16 * 1_048_576
+_SIZE_ENCODER = json.JSONEncoder(ensure_ascii=True, allow_nan=False, separators=(",", ":"))
+
 
 @dataclass(slots=True)
 class _RenderBudget:
     remaining_values: int = MAX_JSON_VALUES
+    remaining_bytes: int = field(default_factory=lambda: MAX_RENDERED_BYTES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +94,7 @@ def run_workflow(
     results: list[StepResult] = []
     step_outputs: dict[str, JsonValue] = {}
     context["steps"] = step_outputs
+    remaining_output_bytes = MAX_RUN_OUTPUT_BYTES
 
     for step in workflow.steps:
         rendered = _render(step.arguments, context, step_id=step.id)
@@ -96,6 +103,9 @@ def run_workflow(
                 "step arguments did not render to an object", step_id=step.id
             )
         output = _execute_step(step, rendered)
+        remaining_output_bytes = _consume_output_bytes(
+            output, remaining_output_bytes, step_id=step.id
+        )
         step_outputs[step.id] = copy.deepcopy(output)
         results.append(StepResult(id=step.id, operation=step.uses, output=output))
 
@@ -103,6 +113,7 @@ def run_workflow(
         final_output = _render(workflow.output, context)
     else:
         final_output = copy.deepcopy(results[-1].output)
+    _consume_output_bytes(final_output, remaining_output_bytes, step_id=None)
     return RunResult(workflow=workflow.name, output=final_output, steps=tuple(results))
 
 
@@ -255,7 +266,6 @@ def _render(
                 depth=depth,
             )
 
-        _consume_value(active_budget, step_id=step_id)
         literal_characters = len(TEMPLATE_PATTERN.sub("", value))
 
         def replace(match: re.Match[str]) -> str:
@@ -271,7 +281,12 @@ def _render(
             if isinstance(resolved, bool):
                 replacement = "true" if resolved else "false"
             else:
-                replacement = str(resolved)
+                try:
+                    replacement = str(resolved)
+                except ValueError as error:
+                    raise WorkflowExecutionError(
+                        "rendered scalar cannot be encoded as JSON", step_id=step_id
+                    ) from error
             literal_characters += len(replacement)
             if literal_characters > MAX_STRING_LENGTH:
                 raise WorkflowExecutionError(
@@ -286,20 +301,21 @@ def _render(
                 f"rendered string exceeds {MAX_STRING_LENGTH} characters",
                 step_id=step_id,
             )
+        _consume_value(active_budget, rendered, step_id=step_id)
         return rendered
     if isinstance(value, list):
-        _consume_value(active_budget, step_id=step_id)
+        _consume_value(active_budget, value, step_id=step_id)
         return [
             _render(child, context, step_id=step_id, budget=active_budget, depth=depth + 1)
             for child in value
         ]
     if isinstance(value, dict):
-        _consume_value(active_budget, step_id=step_id)
+        _consume_value(active_budget, value, step_id=step_id)
         return {
             key: _render(child, context, step_id=step_id, budget=active_budget, depth=depth + 1)
             for key, child in value.items()
         }
-    _consume_value(active_budget, step_id=step_id)
+    _consume_value(active_budget, value, step_id=step_id)
     return value
 
 
@@ -310,7 +326,7 @@ def _clone_with_budget(
     step_id: str | None,
     depth: int = 0,
 ) -> JsonValue:
-    _consume_value(budget, step_id=step_id)
+    _consume_value(budget, value, step_id=step_id)
     if depth > MAX_NESTING:
         raise WorkflowExecutionError("rendered value exceeds the nesting limit", step_id=step_id)
     if isinstance(value, str):
@@ -335,13 +351,48 @@ def _clone_with_budget(
     return value
 
 
-def _consume_value(budget: _RenderBudget, *, step_id: str | None) -> None:
+def _consume_value(budget: _RenderBudget, value: JsonValue, *, step_id: str | None) -> None:
     if budget.remaining_values <= 0:
         raise WorkflowExecutionError(
             f"rendered value exceeds the {MAX_JSON_VALUES}-value limit",
             step_id=step_id,
         )
     budget.remaining_values -= 1
+    # Count compact ASCII-escaped JSON without constructing the whole encoded tree.
+    # Strings/keys are already character-bounded by validation/rendering.
+    if isinstance(value, (list, dict)):
+        _consume_render_bytes(budget, 2 + max(0, len(value) - 1), step_id=step_id)
+        if isinstance(value, dict):
+            for key in value:
+                _consume_render_bytes(budget, len(_SIZE_ENCODER.encode(key)) + 1, step_id=step_id)
+    else:
+        try:
+            size = len(_SIZE_ENCODER.encode(value))
+        except ValueError as error:
+            raise WorkflowExecutionError(
+                "rendered scalar cannot be encoded as JSON", step_id=step_id
+            ) from error
+        _consume_render_bytes(budget, size, step_id=step_id)
+
+
+def _consume_render_bytes(budget: _RenderBudget, size: int, *, step_id: str | None) -> None:
+    if size > budget.remaining_bytes:
+        raise WorkflowExecutionError(
+            f"rendered value exceeds the {MAX_RENDERED_BYTES}-byte limit", step_id=step_id
+        )
+    budget.remaining_bytes -= size
+
+
+def _consume_output_bytes(value: JsonValue, remaining: int, *, step_id: str | None) -> int:
+    # Iterate fragments rather than allocating another full serialized output. Repeated
+    # references count each time, including the final output's copy of the last step.
+    for fragment in _SIZE_ENCODER.iterencode(value):
+        remaining -= len(fragment)
+        if remaining < 0:
+            raise WorkflowExecutionError(
+                f"combined output exceeds the {MAX_RUN_OUTPUT_BYTES}-byte limit", step_id=step_id
+            )
+    return remaining
 
 
 def _resolve(reference: str, context: Mapping[str, JsonValue], *, step_id: str | None) -> JsonValue:

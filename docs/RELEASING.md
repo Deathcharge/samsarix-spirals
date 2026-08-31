@@ -19,30 +19,109 @@ python -m ruff format --check .
 python -m ruff check .
 python -m mypy
 python -m bandit -q -r src
+python -m bandit -q tools/release_check.py
 python -m pip_audit .
+python -m pip_audit -r requirements/build.lock
 python -m pytest
 python -m build
 python -m twine check dist/*
 ```
 
-Create a new virtual environment, install only the wheel, and smoke-test the installed
-copy rather than the source tree:
+The commands above remain development/package-shape checks. Their default isolated
+build resolves the version ranges in `pyproject.toml`; it is **not** the pinned candidate
+build. Commit reviewed changes before the next step. Do not build a release from dirty
+source or from a PR's synthetic merge commit.
 
-```console
-python -m venv .release-venv
-.release-venv\Scripts\python -m pip install --no-deps dist/samsarix_spirals-0.1.0-py3-none-any.whl
-.release-venv\Scripts\samsarix-spirals validate examples/hello.json
-.release-venv\Scripts\samsarix-spirals run examples/hello.json --input examples/hello.input.json
-.release-venv\Scripts\python -I tests/installed_smoke.py
+## 3. Produce candidate artifacts from committed source
+
+Use a fresh builder environment with Python 3.11 or newer and Git. Keep both the builder
+and candidate directory outside the checkout. For example, from the repository root on
+Windows PowerShell:
+
+```powershell
+$releaseWork = New-Item -ItemType Directory -Path (Join-Path $env:TEMP ('samsarix-release-' + [guid]::NewGuid()))
+python -m venv (Join-Path $releaseWork.FullName 'builder')
+if ($LASTEXITCODE -ne 0) { throw 'Builder creation failed' }
+$builderPython = Join-Path $releaseWork.FullName 'builder/Scripts/python.exe'
+& $builderPython -m pip install --require-hashes --only-binary=:all: -r requirements/build.lock
+if ($LASTEXITCODE -ne 0) { throw 'Pinned tool installation failed' }
+& $builderPython -I tools/release_check.py --output-dir (Join-Path $releaseWork.FullName 'candidate')
+if ($LASTEXITCODE -ne 0) { throw 'Candidate verification failed' }
 ```
 
-The isolated subprocess smoke check verifies final-output-only serialization, numeric
-approval rejection without partial stdout, and every checked-in example suite. Its
-subprocesses use `-I` to prevent a source-path override from hiding a broken wheel.
+On Linux/macOS with a POSIX shell:
 
-Remove the disposable environment afterward. On macOS or Linux, use `.release-venv/bin/`.
+```console
+release_work=$(mktemp -d) &&
+python3 -m venv "$release_work/builder" &&
+"$release_work/builder/bin/python" -m pip install --require-hashes --only-binary=:all: -r requirements/build.lock &&
+"$release_work/builder/bin/python" -I tools/release_check.py --output-dir "$release_work/candidate"
+```
 
-## 3. Require external evidence
+The helper requires a clean Git checkout (including untracked files), verifies the six
+installed tool versions and `pip check`, and exports the exact commit with `git archive`.
+Ignored build caches and local files cannot enter that export. It builds twice in separate
+temporary source directories with `SOURCE_DATE_EPOCH` set to the commit timestamp and
+`build --no-isolation`, retaining the frontend's dependency checks. Each build creates a
+source distribution and then builds its wheel from that source distribution. Different
+wheel names or bytes fail verification. Source-archive byte equality is measured and
+reported, **not required**.
+
+Before retaining any candidate, the helper installs the first wheel into a third, fresh
+environment using `--no-index --no-deps`, then runs the committed `installed_smoke.py`.
+That checks all example suites, output-only behavior, numeric approval rejection, and
+JSON/JUnit diagnostic contracts against the installed package using isolated imports.
+The source checkout must still be clean and at the same commit afterward. Child commands
+have 180-second timeouts; this trusted maintainer tool is not a workflow operation or an
+untrusted-build sandbox.
+
+On exit code 0, the new candidate directory contains exactly:
+
+- the wheel and source distribution;
+- `SHA256SUMS`, covering those two artifact files;
+- `release-check.json`, with the source revision, lock digest, tool versions, Python/OS/
+  zlib environment, byte comparisons, smoke outcome, artifact sizes, and SHA-256 hashes.
+
+It never overwrites an existing output directory. Treat any nonzero exit as failure,
+even if an I/O failure leaves a partial output directory. Keep verified artifacts and
+their evidence together; do not replace the wheel by rebuilding during publication.
+Review candidate metadata with the development environment's `python -m twine check`
+against these two actual candidate paths, not stale `dist/` files.
+
+### Scope of the evidence
+
+This verifies two builds **within one environment**, not bit-for-bit agreement across
+different operating systems, Python versions, or future toolchains. Source archives can
+differ despite identical wheels. The lock covers six build packages, not Python, pip,
+the OS, every development dependency, or the inherited build environment. The helper's
+version check is not an installed-file integrity check: use the fresh hash-checked install
+shown above. There are no runtime dependencies, and ordinary source installs continue to
+use the compatible build-system ranges in `pyproject.toml`.
+
+Checksums detect changed bytes relative to trusted evidence; they do not authenticate a
+publisher. This report is unsigned, not an attestation, signature, SBOM, SLSA certification,
+or proof of a hermetic/offline build. Publisher-controlled signing/provenance remains an
+explicit later decision. See [pip's secure installation guidance](https://pip.pypa.io/en/stable/topics/secure-installs/)
+and [PyPA build's isolation/reproducibility guidance](https://build.pypa.io/en/latest/explanation/how-it-works.html).
+
+Update `requirements/build.lock` deliberately: review upstream versions, obtain wheel
+SHA-256 hashes from the official package index, include transitive dependencies for all
+supported builder platforms, and rerun the hash-checked install, dependency audit, and
+three-platform candidate jobs. Do not silently refresh pins during a release build.
+
+### Hosted candidate retention
+
+CI runs the candidate check on Linux, Windows, and macOS with Python 3.11 after the test
+matrix passes. It retains each successful job's four files for 14 days as
+`candidate-<OS>-<checkout SHA>`. These are GitHub Actions artifacts, **not published
+packages or releases**. PR artifacts identify the synthetic merge revision; use the
+post-merge default-branch run for a release candidate. Require the entire CI run and
+consumer-integration run to pass, not just one successful artifact upload. Download the
+chosen artifact bundle, confirm its `source_revision`, and compare the file hashes with
+its report before any authorized publication. Artifact retention is temporary; an
+authorized release process must preserve the chosen evidence with its release.
+
+## 4. Require external evidence
 
 - Observe a successful GitHub Actions run for the exact candidate commit on every Python
   version in the matrix.
@@ -50,7 +129,7 @@ Remove the disposable environment afterward. On macOS or Linux, use `.release-ve
 - Confirm there are no unexpected tracked or generated files and no secrets.
 - Review `docs/PRODUCTIZATION.md` for unresolved release blockers.
 
-## 4. Publish intentionally
+## 5. Publish intentionally
 
 Only a maintainer with authority over the repository, tag, and package index should:
 

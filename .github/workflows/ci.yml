@@ -40,7 +40,11 @@ jobs:
       - if: matrix.python-version == '3.11'
         run: python -m bandit -q -r src
       - if: matrix.python-version == '3.11'
+        run: python -m bandit -q tools/release_check.py
+      - if: matrix.python-version == '3.11'
         run: python -m pip_audit .
+      - if: matrix.python-version == '3.11'
+        run: python -m pip_audit -r requirements/build.lock
 
   build:
     needs: test
@@ -68,3 +72,38 @@ jobs:
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals test examples/repository-policy.json examples/repository-policy.suite.json --json --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals schema workflow --compact
       - run: /tmp/samsarix-spirals-smoke/bin/samsarix-spirals schema suite --compact
+
+  reproducible-build:
+    name: Candidate / ${{ matrix.os }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+      - name: Build twice with hash-pinned tools and smoke-test installed candidate
+        shell: pwsh
+        run: |
+          $builderDir = Join-Path $env:RUNNER_TEMP 'samsarix-builder'
+          python -m venv $builderDir
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $pythonPath = if ($IsWindows) { 'Scripts/python.exe' } else { 'bin/python' }
+          $builderPython = Join-Path $builderDir $pythonPath
+          & $builderPython -m pip install --require-hashes --only-binary=:all: -r requirements/build.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $candidateDir = Join-Path $env:RUNNER_TEMP 'samsarix-candidate'
+          & $builderPython -I tools/release_check.py --output-dir $candidateDir
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain candidate artifacts and unsigned verification evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: candidate-${{ runner.os }}-${{ github.sha }}
+          path: ${{ runner.temp }}/samsarix-candidate/
+          if-no-files-found: error
+          retention-days: 14

@@ -51,6 +51,7 @@ def main() -> None:
         ]:
             shutil.copyfile(ROOT / "examples" / source, consumer / target)
         # JSON is valid YAML, avoiding a test-only YAML serialization dependency.
+        python_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
         config = {
             "repos": [
                 {
@@ -59,7 +60,7 @@ def main() -> None:
                     "hooks": [
                         {
                             "id": "samsarix-spirals-test",
-                            "language_version": sys.executable,
+                            "language_version": python_version,
                             "args": ["workflow with spaces.json", "suite with spaces.json"],
                         }
                     ],

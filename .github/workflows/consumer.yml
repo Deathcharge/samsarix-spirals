@@ -25,6 +25,11 @@ jobs:
         with:
           workflow: examples/release-targets.json
           suite: examples/release-targets.suite.json
+      - name: Pinned public Action consumer
+        uses: Deathcharge/samsarix-spirals@13e4858b7c240c372c281f3ec231003042f8787c
+        with:
+          workflow: examples/release-targets.json
+          suite: examples/release-targets.suite.json
       - name: Missing document must fail
         id: missing
         continue-on-error: true

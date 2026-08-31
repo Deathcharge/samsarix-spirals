@@ -107,6 +107,11 @@ The `test` command runs every case, reports all mismatches, and exits `1` if the
 has changed. Reports describe the mismatch without echoing input or output values, which
 reduces accidental disclosure of fixture data in CI logs.
 
+Failed cases include stable failure codes and the actual failing step ID when known.
+CLI, JUnit and GitHub diagnostics surface that step without printing fixture values or
+custom assertion messages. See [failure diagnostics](docs/WORKFLOW_FORMAT.md#failure-diagnostics)
+for automation fields and cases where no step can be attributed.
+
 ```console
 samsarix-spirals test workflow.json workflow.suite.json
 samsarix-spirals test workflow.json workflow.suite.json --json --compact

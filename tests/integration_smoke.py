@@ -84,6 +84,18 @@ def main() -> None:
             raise RuntimeError(
                 f"Incorrect hook failure contract:\n{failed.stdout}\n{failed.stderr}"
             )
+        if '"failure_code": "output_mismatch"' not in failed.stdout:
+            raise RuntimeError("Installed hook omitted the output-mismatch failure code")
+        suite["cases"][0]["input"] = {"targets": [{"enabled": True}]}
+        suite_path.write_text(json.dumps(suite), encoding="utf-8")
+        execution_failed = command(invocation, consumer, env)
+        if (
+            execution_failed.returncode != 1
+            or '"failure_code": "unexpected_execution_error"' not in execution_failed.stdout
+            or '"step_id": "names"' not in execution_failed.stdout
+            or "template reference" in execution_failed.stdout
+        ):
+            raise RuntimeError("Installed hook failure location/privacy contract failed")
         suite_path.write_text("not json", encoding="utf-8")
         invalid = command(invocation, consumer, env)
         if invalid.returncode != 1 or '"status": "invalid"' not in invalid.stdout:

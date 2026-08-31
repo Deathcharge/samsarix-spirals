@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 # ElementTree only constructs reports; production code never parses XML input.
 from xml.etree import ElementTree  # nosec B405
@@ -20,6 +21,13 @@ from .runner import run_workflow
 SUITE_VERSION = 1
 MAX_SUITE_CASES = 1_000
 MAX_CASE_NAME_LENGTH = 200
+FailureCode = Literal[
+    "unexpected_execution_error",
+    "unexpected_step",
+    "error_message_mismatch",
+    "expected_execution_error",
+    "output_mismatch",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,11 +189,27 @@ class CaseResult:
     name: str
     passed: bool
     detail: str | None = None
+    failure_code: FailureCode | None = None
+    step_id: str | None = None
+
+    @property
+    def diagnostic(self) -> str:
+        """Human failure context without runtime messages or fixture values."""
+        if self.passed:
+            return ""
+        detail = self.detail or "workflow contract failed"
+        if self.step_id is not None:
+            detail += f" [step {json.dumps(self.step_id, ensure_ascii=True)}]"
+        return detail
 
     def to_dict(self) -> dict[str, JsonValue]:
         result: dict[str, JsonValue] = {"name": self.name, "passed": self.passed}
         if self.detail is not None:
             result["detail"] = self.detail
+        if self.failure_code is not None:
+            result["failure_code"] = self.failure_code
+        if self.step_id is not None:
+            result["step_id"] = self.step_id
         return result
 
 
@@ -241,24 +265,53 @@ def _run_case(workflow: Workflow, case: SuiteCase) -> CaseResult:
         result = run_workflow(workflow, case.input)
     except WorkflowExecutionError as error:
         if case.expects_output:
-            return CaseResult(case.name, False, "workflow failed but output was expected")
+            return CaseResult(
+                case.name,
+                False,
+                "workflow failed but output was expected",
+                "unexpected_execution_error",
+                error.step_id,
+            )
         expectation = case.expected_error
         if expectation is None:  # pragma: no cover - validated suite invariant
-            return CaseResult(case.name, False, "invalid error expectation")
+            return CaseResult(
+                case.name,
+                False,
+                "invalid error expectation",
+                "unexpected_execution_error",
+                error.step_id,
+            )
         if expectation.step_id is not None and error.step_id != expectation.step_id:
-            return CaseResult(case.name, False, "execution failed at an unexpected step")
+            return CaseResult(
+                case.name,
+                False,
+                "execution failed at an unexpected step",
+                "unexpected_step",
+                error.step_id,
+            )
         if expectation.message_contains is not None and expectation.message_contains not in str(
             error
         ):
-            return CaseResult(case.name, False, "execution error did not contain expected text")
+            return CaseResult(
+                case.name,
+                False,
+                "execution error did not contain expected text",
+                "error_message_mismatch",
+                error.step_id,
+            )
         return CaseResult(case.name, True)
 
     if not case.expects_output:
         return CaseResult(
-            case.name, False, "workflow completed but an execution error was expected"
+            case.name,
+            False,
+            "workflow completed but an execution error was expected",
+            "expected_execution_error",
         )
     if not json_equal(result.output, case.expected_output):
-        return CaseResult(case.name, False, "workflow output did not equal expected output")
+        return CaseResult(
+            case.name, False, "workflow output did not equal expected output", "output_mismatch"
+        )
     return CaseResult(case.name, True)
 
 
@@ -283,7 +336,7 @@ def suite_result_to_junit_xml(result: SuiteResult, *, workflow: str) -> str:
             {"name": _xml_safe(case.name), "classname": classname, "time": "0"},
         )
         if not case.passed:
-            detail = _xml_safe(case.detail or "workflow contract failed")
+            detail = _xml_safe(case.diagnostic)
             failure = ElementTree.SubElement(
                 test_case,
                 "failure",

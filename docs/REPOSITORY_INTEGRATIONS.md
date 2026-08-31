@@ -51,7 +51,10 @@ counts, and generic mismatch reasons, not fixture inputs, expected values, or wo
 outputs. Keep names non-sensitive. Invalid-document diagnostics may contain field names
 and paths. All report text is JSON-escaped; GitHub error annotations also escape workflow
 command delimiters. At most ten case annotations plus an overflow summary are emitted.
-Annotations identify failed cases, not JSON source lines or actual failing step IDs.
+Annotations identify failed cases and actual failing step IDs when execution provides
+one, but not JSON source lines. Final-output/run-level errors have no invented step ID.
+The JSON report also includes stable case `failure_code` values; see
+[failure diagnostics](WORKFLOW_FORMAT.md#failure-diagnostics) for the complete contract.
 
 Use a normal `pull_request` workflow with read-only permissions. Avoid granting secrets
 or write tokens merely to run contracts, and do not combine untrusted code execution

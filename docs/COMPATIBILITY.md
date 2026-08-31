@@ -14,6 +14,7 @@ pre-1.0 library.
 | Explanation `explain_version: 1` | Existing fields keep their meaning. New optional fields may be added in a minor release; removing or redefining fields requires a new explanation version. |
 | CLI | Existing command names, success/error exit classes (`0`, `1`, `2`), and documented flags remain compatible within a minor release line. New commands and optional flags may be added. |
 | Python API | Patch releases are compatible. Until 1.0, a minor release may change public Python names or signatures when recorded in the changelog and migration notes. |
+| Suite JSON reports | Existing fields retain their meaning. Optional fields may be added; readers should tolerate unknown fields and failure codes. `failure_code` values retain their documented meanings within the current minor line. |
 | Human-readable diagnostics | Wording may improve at any release. Automation must use exit codes, JSON/JUnit reports, and step IDs rather than matching complete human messages. |
 
 Adding an operation, assertion operator, or optional document field is backward-compatible

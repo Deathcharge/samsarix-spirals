@@ -367,6 +367,45 @@ finite-number, nesting, string, collection, and total-value limits as workflow a
 documents. A suite runs all cases even after a mismatch. Human and JSON reports avoid
 echoing fixture values.
 
+### Failure diagnostics
+
+Failed cases in JSON suite reports have a stable `failure_code`. When execution failed
+inside a step, `step_id` identifies the **actual** failing step, not the expected step:
+
+```json
+{
+  "name": "unapproved release",
+  "passed": false,
+  "detail": "workflow failed but output was expected",
+  "failure_code": "unexpected_execution_error",
+  "step_id": "require_approval"
+}
+```
+
+| Failure code | Meaning | Step ID |
+| --- | --- | --- |
+| `unexpected_execution_error` | Execution failed when output was expected. | Actual step, if known. |
+| `unexpected_step` | Execution failed, but not at the expected step. | Actual step, if known. |
+| `error_message_mismatch` | Execution failed but did not match `message_contains`. | Actual step, if known. |
+| `expected_execution_error` | Execution succeeded when an error was expected. | Omitted. |
+| `output_mismatch` | Final output did not equal the expected JSON. | Omitted; no execution step failed. |
+
+No step ID is invented for final-output rendering or run-level failures such as the step
+limit. Passing cases (including correctly expected errors) keep their existing minimal
+`name`/`passed` shape. Invalid documents still use validation diagnostics and exit `2`,
+not these case failure codes. Suite expectation semantics and exit codes are unchanged.
+
+Human CLI and JUnit failure messages append `[step "require_approval"]` when known.
+JSON keeps the generic `detail` separate from `step_id`; automation should use
+`failure_code`/`step_id`, not parse human prose. Python consumers can read the same fields
+on `result.cases`, and `case.diagnostic` supplies the formatted human description.
+
+Diagnostics omit input/output values, raw runtime exception messages, expected error
+text and expected step labels. A list-operation error identifies the enclosing workflow
+step, not a payload path or item index. Workflow/suite/case names and actual step IDs are
+metadata, not secrets: choose non-sensitive identifiers. For deeper debugging, reproduce
+the failing case locally with reviewed input; ordinary `run` errors may contain values.
+
 ### Published structural schemas
 
 The distribution bundles JSON Schema Draft 2020-12 documents for workflow and suite

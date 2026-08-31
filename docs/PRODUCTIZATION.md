@@ -126,6 +126,38 @@ The [measurement guide](PERFORMANCE.md) records reproducible commands, raw evide
 operating caveats. Representative resource observations do not satisfy independent adoption,
 an independent security review, combined-maximum proofs or publication requirements.
 
+### Follow-up: actionable suite failure context
+
+At baseline `a71aea2`, suite reports discarded the actual failing step and offered only
+human mismatch categories. A CI consumer seeing "execution failed at an unexpected step"
+could not locate that step without rerunning the case; automation had to parse prose.
+Twelve new API/CLI/JUnit/CI checks initially failed, reproducing the missing fields and
+missing step context before implementation.
+
+Case results now carry a stable failure code and, only when execution identifies one,
+the actual step ID. Existing generic detail strings, passing-case JSON, expectation
+matching and exit codes remain compatible. Human/JUnit/GitHub messages append the step
+without dumping payload values, expected labels/messages, raw exception text or list
+item paths. Final-output and run-level errors do not acquire a guessed last-step ID.
+This improves the release-policy/platform-maintainer troubleshooting journey without
+adding runtime operations, dependencies, I/O or credentials.
+
+Research-informed interoperability decisions: GitHub's [annotation protocol](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-an-error-message)
+permits messages without source coordinates, so annotations do not invent JSON line
+numbers. Pytest's [JUnit guidance](https://docs.pytest.org/en/stable/how-to/output.html#record-property)
+warns that custom testcase properties can fail schema validation; step context uses
+existing failure text/message fields instead. Stable machine codes are in JSON reports.
+
+The regression matrix covers all five failure codes, expected-success/error controls,
+collection failures, unattributed final/run errors, privacy and escaping, all report
+consumers, and legacy CaseResult construction. Local final verification passed 331
+tests with four intentional input-schema skips and 97.40% branch-aware coverage on
+Python 3.14.7. Ruff format/lint, mypy, Bandit, compileall and project pip-audit passed;
+isolated sdist/wheel build, twine and a clean installed-wheel smoke passed too.
+Installed-wheel smoke and the real pre-commit lifecycle now verify failure context.
+Hosted results are recorded in the milestone PR; source publication and independently
+owned consumer trials remain separate acceptance gates.
+
 ### Follow-up: trace ownership and measured allocation
 
 The resource probe identified a redundant retained tree for every completed step. The

@@ -157,7 +157,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             else:
                 for case in suite_result.cases:
                     status = "PASS" if case.passed else "FAIL"
-                    detail = f": {case.detail}" if case.detail else ""
+                    detail = f": {case.diagnostic}" if not case.passed else ""
                     print(f"{status} {case.name}{detail}")
                 print(
                     f"suite {suite_result.suite}: "

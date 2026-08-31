@@ -187,6 +187,11 @@ these limits prevent template amplification. The runner performs no I/O after lo
 environment variables, and does not add time, randomness, or identifiers to results.
 Given the same workflow, input, and run limit, its JSON value result is the same.
 
+The 20-level nesting limit applies to the composed rendered tree, not just its input
+pieces. A placeholder nested ten levels into the result has only ten further levels
+available to its referenced value. This also applies when wrapping prior-step output
+and when rendering the final output; an over-depth composition fails before being emitted.
+
 Object key order is not semantic. The CLI sorts keys when serializing its result.
 
 ## Static explanations

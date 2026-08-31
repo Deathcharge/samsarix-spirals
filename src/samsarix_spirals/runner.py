@@ -150,7 +150,7 @@ def _merge_objects(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValu
                 f"merge objects[{index}] must render to an object", step_id=step_id
             )
         merged.update(copy.deepcopy(value))
-        if len(merged) > MAX_COLLECTION_ITEMS:  # pragma: no cover - render budget is tighter
+        if len(merged) > MAX_COLLECTION_ITEMS:
             raise WorkflowExecutionError(
                 f"merged object exceeds the {MAX_COLLECTION_ITEMS}-key limit", step_id=step_id
             )
@@ -240,8 +240,11 @@ def _render(
     *,
     step_id: str | None = None,
     budget: _RenderBudget | None = None,
+    depth: int = 0,
 ) -> JsonValue:
     active_budget = _RenderBudget() if budget is None else budget
+    if depth > MAX_NESTING:
+        raise WorkflowExecutionError("rendered value exceeds the nesting limit", step_id=step_id)
     if isinstance(value, str):
         exact = TEMPLATE_PATTERN.fullmatch(value)
         if exact:
@@ -249,6 +252,7 @@ def _render(
                 _resolve(exact.group(1), context, step_id=step_id),
                 active_budget,
                 step_id=step_id,
+                depth=depth,
             )
 
         _consume_value(active_budget, step_id=step_id)
@@ -285,11 +289,14 @@ def _render(
         return rendered
     if isinstance(value, list):
         _consume_value(active_budget, step_id=step_id)
-        return [_render(child, context, step_id=step_id, budget=active_budget) for child in value]
+        return [
+            _render(child, context, step_id=step_id, budget=active_budget, depth=depth + 1)
+            for child in value
+        ]
     if isinstance(value, dict):
         _consume_value(active_budget, step_id=step_id)
         return {
-            key: _render(child, context, step_id=step_id, budget=active_budget)
+            key: _render(child, context, step_id=step_id, budget=active_budget, depth=depth + 1)
             for key, child in value.items()
         }
     _consume_value(active_budget, step_id=step_id)
@@ -304,7 +311,7 @@ def _clone_with_budget(
     depth: int = 0,
 ) -> JsonValue:
     _consume_value(budget, step_id=step_id)
-    if depth > MAX_NESTING:  # pragma: no cover - validated context invariant
+    if depth > MAX_NESTING:
         raise WorkflowExecutionError("rendered value exceeds the nesting limit", step_id=step_id)
     if isinstance(value, str):
         if len(value) > MAX_STRING_LENGTH:  # pragma: no cover - validated context invariant

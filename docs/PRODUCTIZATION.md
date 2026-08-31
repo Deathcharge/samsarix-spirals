@@ -60,6 +60,23 @@ integration, measure real resource use, prepare reproducible publisher-owned art
 and validate the workflow in independently owned repositories. No production-readiness,
 external adoption, private reporting enablement, or package publication is asserted.
 
+### Follow-up: composed render depth
+
+A separate bounded reproduction combined depth-12 input and template trees into an
+accepted depth-24 result, contradicting the documented limit of 20. The renderer now
+carries the surrounding depth into placeholder cloning and recursive literal rendering.
+Five regression cases failed before the fix; after it, object/array expansion, explicit
+final output, and prior-step growth are rejected at the boundary, while exact-depth-20
+results still succeed. A further case verifies merged objects cannot exceed the combined
+10,000-key limit; this removes an incorrect claim that the value budget made that path
+unreachable. Local pytest after this follow-up: 164 passed, 3 intentional schema skips,
+96.83% coverage on Python 3.14.7.
+
+Remaining resource work is explicit: per-tree depth/value/string caps and step limits
+are not a measured process-memory or total serialized-byte budget. Verify aggregate
+retained-output and serialized-size behavior before claiming suitability for hostile,
+multi-tenant execution; no such deployment capability or claim exists in this checkout.
+
 Sustainability hypothesis (not validated demand): keep the MPL-covered local runner
 usable without an account; offer optional workflow migration, integration assistance,
 and support through Samsarix LLC. The core has no metered API or hosting cost, but uses

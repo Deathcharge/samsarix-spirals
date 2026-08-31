@@ -81,6 +81,15 @@
         },
         {
           "$ref": "#/$defs/pickStep"
+        },
+        {
+          "$ref": "#/$defs/mapStep"
+        },
+        {
+          "$ref": "#/$defs/filterStep"
+        },
+        {
+          "$ref": "#/$defs/normalizeStep"
         }
       ]
     },
@@ -206,6 +215,75 @@
                   "$ref": "#/$defs/exactTemplate"
                 }
               ]
+            }
+          }
+        }
+      }
+    },
+    "collectionItems": {
+      "oneOf": [
+        {"$ref": "#/$defs/exactTemplate"},
+        {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/jsonValue"}}
+      ]
+    },
+    "mapStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "uses", "with"],
+      "properties": {
+        "id": {"$ref": "#/$defs/setStep/properties/id"},
+        "uses": {"const": "map"},
+        "with": {
+          "type": "object", "additionalProperties": false,
+          "required": ["items", "template"],
+          "properties": {
+            "items": {"$ref": "#/$defs/collectionItems"},
+            "template": {"$ref": "#/$defs/jsonValue"}
+          }
+        }
+      }
+    },
+    "filterStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "uses", "with"],
+      "properties": {
+        "id": {"$ref": "#/$defs/setStep/properties/id"},
+        "uses": {"const": "filter"},
+        "with": {
+          "type": "object", "additionalProperties": false,
+          "required": ["items", "where"],
+          "properties": {
+            "items": {"$ref": "#/$defs/collectionItems"},
+            "where": {
+              "$ref": "#/$defs/assertStep/properties/with",
+              "not": {"required": ["message"]}
+            }
+          }
+        }
+      }
+    },
+    "normalizeStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "uses", "with"],
+      "properties": {
+        "id": {"$ref": "#/$defs/setStep/properties/id"},
+        "uses": {"const": "normalize"},
+        "with": {
+          "type": "object", "additionalProperties": false,
+          "required": ["value", "transforms"],
+          "properties": {
+            "value": {
+              "oneOf": [
+                {"type": "string", "maxLength": 100000},
+                {"type": "array", "maxItems": 10000,
+                 "items": {"type": "string", "maxLength": 100000}}
+              ]
+            },
+            "transforms": {
+              "type": "array", "minItems": 1, "maxItems": 3,
+              "items": {"enum": ["trim", "ascii_lower", "ascii_upper"]}
             }
           }
         }

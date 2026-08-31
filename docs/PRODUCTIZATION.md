@@ -72,6 +72,35 @@ results still succeed. A further case verifies merged objects cannot exceed the 
 unreachable. Local pytest after this follow-up: 164 passed, 3 intentional schema skips,
 96.83% coverage on Python 3.14.7.
 
+### Follow-up: bounded list shaping
+
+The prior checkout could project a single object but could not express a batch
+transformation: `map` was rejected as an unknown operation and `item` as an unknown
+template root. The new release-target journey filters enabled records, projects their
+names, and normalizes ASCII labels before handing JSON to a later CI job. It is a
+runnable reference use case, not evidence of independent adoption or authorization.
+
+Added `map`, `filter`, and `normalize` with version-1 structural schemas. Local `item`
+references are limited to map templates/filter predicates and appear separately in
+static explanations. All list output/predicate work shares the established budgets;
+there is no per-item reset, nested workflow, arbitrary expression, regex, or I/O.
+Filtering uses existing strict JSON comparisons and errors on missing/malformed values.
+Normalization is intentionally ASCII-only, ordered, non-expanding, and not sanitization.
+
+The [jq manual](https://jqlang.org/manual/dev/) documents much broader mapping/filtering
+capabilities. Inference: copying that expression language is not a differentiation
+strategy. This addition instead completes a small reviewable batch contract with schema,
+positive/negative fixtures, attributable errors, and static reference inventory. The
+downstream caller still owns allowlists, authorization, duplicates, and safe command use.
+
+Initial new-operation tests: 52 passed alongside all 199 previous tests (97.32% overall
+coverage on Python 3.14.7). Final local regression coverage includes 259 passing tests,
+four intentional input-schema skips, and 97.33% coverage. The fresh installed wheel
+passes all four example suites, the batch CLI output/explanation checks, and previous
+approval/byte-limit checks. Exact-head hosted-CI evidence is recorded in the milestone
+PR. Repository integrations, measured workloads, owned release
+artifacts, and independent adoption remain the next gates; no production claim is added.
+
 ### Follow-up: aggregate encoded payload budgets
 
 A bounded reproduction used a 1,111-byte workflow and 100,012-byte input to produce
@@ -253,7 +282,7 @@ fixture data, or enforcing a small precondition in a scriptable pipeline.
 ### Supported checkout surface (package version remains 0.1.0; additions unreleased)
 
 - workflow schema version `1`;
-- ordered `set`, `assert`, `merge`, and `pick` operations;
+- ordered `set`, `assert`, `merge`, `pick`, `map`, `filter`, and `normalize` operations;
 - templates rooted at `input`, `defaults`, and completed `steps`;
 - CLI commands `validate`, `explain`, `run`, `test`, `schema`, and non-overwriting `init`;
 - typed Python workflow, suite, explanation, and schema discovery APIs;
@@ -262,7 +291,7 @@ fixture data, or enforcing a small precondition in a scriptable pipeline.
 
 ### Explicit non-goals
 
-Hosted APIs, browser UI, scheduling, durable recovery, retries, parallel execution, loops,
+Hosted APIs, browser UI, scheduling, durable recovery, retries, parallel execution, unbounded loops,
 arbitrary expressions/code, third-party connectors, HTTP/webhooks, OAuth, credential
 storage, secrets management, multi-tenancy, RBAC, databases, distributed workers,
 marketplaces, AI agents, and compatibility with the unpublished prototype are not part of

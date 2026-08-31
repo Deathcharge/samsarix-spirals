@@ -1,0 +1,7 @@
+{
+  "targets": [
+    {"name": " LINUX-X64 ", "enabled": true, "internal_note": "not needed downstream"},
+    {"name": "WINDOWS-X64", "enabled": true},
+    {"name": "experimental", "enabled": false}
+  ]
+}

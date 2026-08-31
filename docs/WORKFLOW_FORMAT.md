@@ -44,7 +44,7 @@ at most 1 MiB, at most 20 levels deep, and contain only finite JSON numbers.
 Each step has exactly three fields:
 
 - `id`: starts with a letter, then contains up to 63 letters, digits, `_`, or `-`.
-- `uses`: one of `set`, `assert`, `merge`, or `pick`.
+- `uses`: one of `set`, `assert`, `merge`, `pick`, `map`, `filter`, or `normalize`.
 - `with`: an object containing operation arguments.
 
 IDs are unique and case-sensitive. A step can reference only earlier steps. Execution is
@@ -143,6 +143,85 @@ workflow boundary must be named explicitly.
 Selection is top-level only: naming an object-valued key retains that entire nested
 object. It does not recursively remove sensitive child fields.
 
+### `map`
+
+`map` requires `items` (an array or exact template) and `template` (any JSON value).
+It renders the template once per item and returns an array in the original order:
+
+```json
+{
+  "id": "names",
+  "uses": "map",
+  "with": {
+    "items": "{{ input.targets }}",
+    "template": {"name": "{{ item.name }}", "source": "{{ defaults.source }}"}
+  }
+}
+```
+
+`item` is the current JSON value, so `{{ item }}` also supports scalar items. The
+`input`, `defaults`, and prior `steps` roots remain available. `item` is valid only in
+`map.template` or `filter.where`, never in the source `items`, another operation, or
+final output. There is no index variable, nested operation, executable expression, or
+second rendering of template-looking text obtained from input. Keys are literal,
+as in `set`. Each input item produces exactly one output, including `null`.
+
+### `filter`
+
+`filter` requires `items` and a `where` object containing `value`, a literal `operator`,
+and `expected` when the operator requires it. It uses the same comparisons as `assert`,
+but a false comparison excludes the item instead of failing the step. Custom `message`
+is not supported. For example:
+
+```json
+{
+  "id": "enabled",
+  "uses": "filter",
+  "with": {
+    "items": "{{ input.targets }}",
+    "where": {"value": "{{ item.enabled }}", "operator": "equals", "expected": true}
+  }
+}
+```
+
+Missing fields or invalid operand types are execution errors, not silent exclusions.
+An item with `enabled: 1` does not equal boolean `true`. Matching items are copied whole;
+use a subsequent `map` to select/rename fields if needed. Neither operation deduplicates
+or sorts. Both return `[]` for empty input without evaluating their bodies, but malformed
+body syntax, unknown operators, and invalid static references are rejected even then.
+
+List operations render the source array once. A map's entire output shares one
+50,000-value/4 MiB budget, including its array root. Filter predicate renders share one
+50,000-value/4 MiB work budget across **all** items, including excluded items; its output
+has a separate shared budget. No limit resets per item. The 10,000-item and composed
+depth limits still apply. Each list operation counts as one workflow step, while its
+iteration is bounded by these array/work budgets. Per-item failures identify the step
+and zero-based `item[N]`; no partial success result is returned.
+
+### `normalize`
+
+`normalize` requires `value` and `transforms`. The value must render to a string or an
+array of strings; it returns the same scalar/array shape. `transforms` is a static list
+of one to three names, applied in the listed order:
+
+- `trim`: removes only ASCII space, tab, CR, LF, vertical tab, and form feed at both ends.
+- `ascii_lower`: changes `A`–`Z` to `a`–`z`.
+- `ascii_upper`: changes `a`–`z` to `A`–`Z`.
+
+```json
+{
+  "id": "normalized",
+  "uses": "normalize",
+  "with": {"value": "{{ steps.names }}", "transforms": ["trim", "ascii_lower"]}
+}
+```
+
+Non-ASCII characters are unchanged, making these transforms independent of locale and
+Unicode database changes. There is no implicit string conversion, Unicode casefolding,
+regex replacement, validation, escaping, or sanitization. Empty strings/arrays remain
+valid. A non-string array element fails with its index. Input and output remain bounded
+by the existing limits; these transforms cannot increase string size.
+
 ### Final output versus trace
 
 `run` normally serializes the final output together with every completed step output.
@@ -229,6 +308,7 @@ internals; subsequently caller-mutated results are outside the execution guarant
 
 - the lexicographically sorted `input_paths` and `default_paths` referenced anywhere;
 - each step's operation, direct prior-step dependencies, and direct input/default paths;
+- `item_paths` on map/filter steps, listing their local item references separately;
 - the final output's direct dependencies and paths.
 
 Paths preserve their template spelling, such as `input.items.0.name`. A reference to a

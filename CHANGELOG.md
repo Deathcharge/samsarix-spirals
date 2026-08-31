@@ -7,6 +7,12 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Added
 
+- Bounded `map`/`filter` list operations with scoped `item` templates, shared output/work
+  budgets, fail-fast indexed errors, and JSON comparison semantics. `normalize` applies
+  ordered ASCII trim/lower/upper transforms to strings or string arrays. These are
+  additive schema-version-1 operations; existing workflows retain their behavior.
+- Bundled structural schemas and `explain` item-reference inventories for the new
+  operations, plus a runnable release-target batch example and eight regression cases.
 - `run --output-only` for piping the raw final JSON value without intermediate trace
   entries; the default trace format remains compatible.
 

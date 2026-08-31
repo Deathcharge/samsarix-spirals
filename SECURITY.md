@@ -19,11 +19,17 @@ mitigation. Samsarix LLC does not currently promise a response-time SLA.
 Samsarix Spirals 0.1 reads local JSON documents and returns local JSON output. Its runner:
 
 - performs no network, subprocess, dynamic import, `eval`, or persistence operations;
-- accepts only the built-in `set`, `assert`, `merge`, and `pick` operations;
+- accepts only the built-in `set`, `assert`, `merge`, `pick`, `map`, `filter`, and
+  `normalize` operations;
 - rejects duplicate JSON keys, non-finite numbers, excessive nesting, files over 1 MiB,
   workflows over 1,000 steps, strings over 100,000 characters, and JSON trees over
   50,000 values;
 - caps a normal run at 100 steps unless the caller explicitly raises the limit.
+
+List operations iterate an already bounded array; they cannot run nested workflows,
+recursively invoke operations, or evaluate code. Map outputs and filter predicate work
+share value/byte budgets across items. Item references exist only in their operation's
+body. See the workflow format for encoded-payload limits and their accounting scope.
 
 The tool runs with the invoking user's filesystem permissions. Treat workflow and input
 files as data, review output destinations chosen by shell redirection, and do not put

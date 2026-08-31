@@ -18,16 +18,20 @@ class StepExplanation:
     depends_on: tuple[str, ...]
     input_paths: tuple[str, ...]
     default_paths: tuple[str, ...]
+    item_paths: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, JsonValue]:
         """Return a detached JSON-compatible representation."""
-        return {
+        result: dict[str, JsonValue] = {
             "id": self.id,
             "uses": self.uses,
             "depends_on": list(self.depends_on),
             "input_paths": list(self.input_paths),
             "default_paths": list(self.default_paths),
         }
+        if self.uses in {"map", "filter"}:
+            result["item_paths"] = list(self.item_paths)
+        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +41,7 @@ class OutputExplanation:
     depends_on: tuple[str, ...]
     input_paths: tuple[str, ...]
     default_paths: tuple[str, ...]
+    item_paths: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, JsonValue]:
         """Return a detached JSON-compatible representation."""
@@ -86,6 +91,7 @@ def explain_workflow(workflow: Workflow) -> WorkflowExplanation:
                 depends_on=references.depends_on,
                 input_paths=references.input_paths,
                 default_paths=references.default_paths,
+                item_paths=references.item_paths,
             )
         )
 
@@ -113,6 +119,7 @@ def _collect_references(value: JsonValue) -> OutputExplanation:
     dependencies: set[str] = set()
     inputs: set[str] = set()
     defaults: set[str] = set()
+    items: set[str] = set()
 
     def visit(child: JsonValue) -> None:
         if isinstance(child, str):
@@ -125,6 +132,8 @@ def _collect_references(value: JsonValue) -> OutputExplanation:
                     defaults.add(reference)
                 elif root == "steps":
                     dependencies.add(segments[0])
+                elif root == "item":
+                    items.add(reference)
         elif isinstance(child, list):
             for item in child:
                 visit(item)
@@ -137,4 +146,5 @@ def _collect_references(value: JsonValue) -> OutputExplanation:
         depends_on=tuple(sorted(dependencies)),
         input_paths=tuple(sorted(inputs)),
         default_paths=tuple(sorted(defaults)),
+        item_paths=tuple(sorted(items)),
     )

@@ -11,9 +11,10 @@ on PyPI, so install it from a checkout or a locally built wheel.
 ## What it does
 
 - Validates a versioned JSON workflow before execution.
-- Runs `set`, `assert`, `merge`, and `pick` steps in a fixed order.
+- Runs `set`, `assert`, `merge`, `pick`, `map`, `filter`, and `normalize` steps in a fixed order.
 - Runs checked-in suites that prove expected outputs and expected failures.
-- Renders values from `input`, `defaults`, and completed `steps`.
+- Renders values from `input`, `defaults`, and completed `steps`, with scoped `item`
+  references inside list transformations.
 - Emits deterministic JSON with no timestamps, random IDs, or hidden state.
 - Performs no network requests, subprocess execution, credential storage, or imports
   from another Samsarix repository.
@@ -138,6 +139,25 @@ that a public schema host is deployed yet.
 For CI systems that ingest JUnit XML, use `--junit`. The deterministic report contains
 suite and case names plus non-sensitive mismatch categories, but never fixture inputs,
 expected outputs, or actual outputs.
+
+## Prepare a batch for CI
+
+The release-target example filters enabled records, projects their names, and applies
+ordered ASCII trim/lowercase transforms:
+
+```console
+samsarix-spirals run examples/release-targets.json --input examples/release-targets.input.json --output-only --compact
+samsarix-spirals test examples/release-targets.json examples/release-targets.suite.json
+```
+
+The final value is `["linux-x64", "windows-x64"]`. Empty input returns `[]`; missing
+required record fields or non-string target names fail with an attributed error. Order
+and duplicates are preserved. This example prepares data only: a downstream job must
+still validate allowed target names, authorization, uniqueness, and shell-safe usage.
+Normalization is not sanitization, and `filter` preserves whole selected records in its
+trace. Use `--output-only` when only the projected names should leave the process.
+
+See the [list operation contracts](docs/WORKFLOW_FORMAT.md#map) for scope and limits.
 
 ## Python API
 

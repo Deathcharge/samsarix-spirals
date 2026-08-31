@@ -1,0 +1,46 @@
+{
+  "suite_version": 1,
+  "name": "release-target-contract",
+  "cases": [
+    {
+      "name": "filter project and normalize",
+      "input": {"targets": [
+        {"name": " LINUX-X64 ", "enabled": true, "internal_note": "excluded"},
+        {"name": "WINDOWS-X64", "enabled": true},
+        {"name": "experimental", "enabled": false}
+      ]},
+      "expect": {"output": ["linux-x64", "windows-x64"]}
+    },
+    {"name": "empty list", "input": {"targets": []}, "expect": {"output": []}},
+    {
+      "name": "numeric and textual enablement are not true",
+      "input": {"targets": [{"enabled": 1}, {"enabled": "true"}, {"enabled": null}]},
+      "expect": {"output": []}
+    },
+    {
+      "name": "duplicate targets preserve order",
+      "input": {"targets": [{"name": "Linux", "enabled": true}, {"name": "LINUX", "enabled": true}]},
+      "expect": {"output": ["linux", "linux"]}
+    },
+    {
+      "name": "missing enablement fails closed",
+      "input": {"targets": [{"name": "Linux"}]},
+      "expect": {"error": {"step_id": "enabled", "message_contains": "item[0]"}}
+    },
+    {
+      "name": "enabled target must name itself",
+      "input": {"targets": [{"enabled": true}]},
+      "expect": {"error": {"step_id": "names", "message_contains": "missing"}}
+    },
+    {
+      "name": "target names must be strings",
+      "input": {"targets": [{"enabled": true, "name": 7}]},
+      "expect": {"error": {"step_id": "normalized", "message_contains": "value[0] must be a string"}}
+    },
+    {
+      "name": "target collection must be an array",
+      "input": {"targets": {}},
+      "expect": {"error": {"step_id": "enabled", "message_contains": "must render to an array"}}
+    }
+  ]
+}

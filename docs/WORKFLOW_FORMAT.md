@@ -301,6 +301,11 @@ is not a supported deployment. API factories normalize validated mappings/tuples
 detached JSON objects/arrays. Use those factories and do not mutate validated workflow
 internals; subsequently caller-mutated results are outside the execution guarantee.
 
+The 1 MiB encoded-document limit applies to file/byte loaders. Python workflow factories
+validate defaults, each step's arguments, and explicit output as separate JSON trees;
+they do not enforce one aggregate encoded-byte or value-count cap across an API-created
+workflow. Runtime rendering and retained-output budgets still apply to every run.
+
 ## Static explanations
 
 `samsarix-spirals explain WORKFLOW` validates a workflow and emits an `explain_version`

@@ -70,6 +70,10 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Changed
 
+- Removed redundant private trace and operation-argument copies while preserving detached
+  public step/final/report outputs and all resource budgets. Added all-operation mutation
+  regressions and before/after measurements; trace-only allocation improved in the recorded
+  workload, while full-report memory remained essentially unchanged.
 - Exact suite-output comparison now distinguishes JSON booleans from numbers while
   retaining JSON numeric equality between integer and decimal representations.
 

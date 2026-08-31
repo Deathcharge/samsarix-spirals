@@ -24,6 +24,18 @@ required to address an actively exploitable security or resource-exhaustion issu
 Bug fixes that make behavior match the documented contract are allowed in patch releases.
 If callers may have relied on the defect, the changelog must identify the corrected case.
 
+## Python result ownership
+
+Results from `run_workflow` have frozen record fields but mutable JSON dictionaries and
+lists. The final output, each step output, and each `to_dict()` export own detached
+mutable trees. Mutating one does not mutate another, the supplied input, validated
+workflow data, or a later run. Repeated template occurrences are detached too.
+
+This is an ownership contract, not deep immutability or a sandbox for arbitrary Python
+objects. Construct workflows with the public validation factories and do not mutate
+validated internals during execution. Private implementation indexes may share trees
+while a run is in progress; they are not public interfaces.
+
 ## Deprecation process
 
 There are no deprecated workflow features today. If one is introduced, maintainers will:

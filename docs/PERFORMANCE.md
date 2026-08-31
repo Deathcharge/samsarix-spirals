@@ -121,6 +121,42 @@ memory even while remaining within encoded-output limits. This does not establis
 sufficient deployment memory allowance, universal ceiling or vulnerability. Investigate
 trace-copy costs and combined-limit workloads before making stronger capacity claims.
 
+### Trace ownership comparison (2026-08-31)
+
+The runner now shares one private step-output tree between its lookup index and result
+record, and transfers already-detached argument nodes into `set`, `assert`, `merge`, and
+`pick` outputs. Every later context reference still clones through the bounded renderer;
+final output and public report conversion remain detached. No limits were relaxed.
+
+Both [before](benchmarks/trace-before.json) and [after](benchmarks/trace-after.json) reports
+used the same fresh, otherwise empty virtual environment on the Windows/CPython 3.14.7
+desktop described above. The before source is `3446edb`, the after source is `96e3324`.
+Their respective harness/runtime/fixture fingerprints are
+`1d434e8f671ac6eea02e59c42d8e54953222f7ed50bd5318babe47aa1dbbbf6c` and
+`82b2e9d41c62d30c87478aa37df837e1fa6486ba28262fbd237a4804f76c5d07`.
+Run this command at each revision, choosing a distinct, nonexistent report filename:
+
+```console
+python -I tools/benchmark.py --samples 5 --scenario trace_100_steps --scenario trace_100_steps_json --scenario suite_1000 --output comparison.local.json
+```
+
+| Scenario | Python allocation peak before → after, MiB | Largest observed process peak before → after, MiB | Operation median before → after, ms |
+| --- | ---: | ---: | ---: |
+| 100-step trace | 37.70 → 19.11 | 64.90 → 45.46 | 4,197.60 → 868.25 |
+| Trace plus compact JSON | 39.36 → 39.36 | 67.99 → 67.61 | 6,241.73 → 1,498.70 |
+| 1,000-case suite | 1.13 → 1.13 | 27.26 → 27.15 | 252.69 → 202.67 |
+
+The trace-only allocation peak nearly halved. Report conversion still copies public
+trees, so the serialized-report high-water mark was essentially unchanged. This is a
+specific workload observation, not a universal memory ceiling or reduction guarantee.
+
+Timing is confounded: before and after were sequential desktop runs, not randomized
+paired trials; unrelated system load was uncontrolled. Even startup (unaffected by the
+copy change) moved from a 1,057 ms median to 388 ms. Do not interpret the operation-time
+ratios as an established speedup. Raw files retain all samples, including wide ranges.
+The earlier development-interpreter observation remains historical evidence and is not
+the baseline for this fresh-environment comparison.
+
 ### Apply measurements to a deployment
 
 - Use one suite invocation for a batch rather than starting a Python process per case.

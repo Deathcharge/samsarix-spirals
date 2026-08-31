@@ -126,6 +126,36 @@ The [measurement guide](PERFORMANCE.md) records reproducible commands, raw evide
 operating caveats. Representative resource observations do not satisfy independent adoption,
 an independent security review, combined-maximum proofs or publication requirements.
 
+### Follow-up: trace ownership and measured allocation
+
+The resource probe identified a redundant retained tree for every completed step. The
+runtime now shares that tree between two private indexes and lets `set`, `assert`,
+`merge`, and `pick` consume already-detached argument nodes. Context reads, input/model
+boundaries, final output, and public report exports remain detached; byte/depth/value
+limits and operation results are unchanged. The runtime/tests commit is `96e3324`.
+
+Before implementation, 22 new ownership checks passed and two copy-cost regressions
+failed (four/42 top-level deep copies for one/20 steps, instead of two). Afterward all
+24 pass, including nested mutation and repeated-reference checks across all seven
+operations, explicit/implicit final output, reports, inputs, defaults and later runs.
+Full local verification: 315 tests passed, four intentional schema skips, 97.36%
+branch-aware coverage on Python 3.14.7. Ruff, mypy, Bandit, project pip-audit, compileall,
+isolated sdist/wheel build, twine and a fresh installed-wheel smoke check passed.
+
+Fresh-environment five-sample measurements are retained in the [performance guide](PERFORMANCE.md).
+The 100-step trace's Python allocation peak fell from 37.70 to 19.11 MiB; serialized
+report allocation stayed at 39.36 MiB. Desktop load confounds timing, so no speedup ratio
+is claimed. The benchmark and limits do not establish maximum deployment RAM.
+
+A source-backed security diff review of the frozen runtime patch, with an independent
+architecture pass, reported no findings. Scan `cab8cbf6-6cc8-4468-9ab6-6701c7106c37`
+sealed successfully, but its canonical coverage retained an earlier architecture-pending
+checkpoint despite the completed review and final submission. Its report therefore
+remains marked partial; this is not full-scope or independent external certification.
+The architecture review informed clearer result-ownership, API-limit and operator-tool
+documentation. Hosted CI results belong to the milestone PR; publication and independent
+consumer adoption remain separate gates.
+
 ### Follow-up: bounded list shaping
 
 The prior checkout could project a single object but could not express a batch
@@ -359,7 +389,7 @@ The package has the following responsibility layers:
 1. `model.py` performs bounded UTF-8 JSON loading, duplicate-key rejection, structural
    validation, static template/reference checks, and defensive copying.
 2. `runner.py` renders validated values, executes in-memory operations sequentially,
-   and returns immutable result records.
+   and returns frozen result records containing independently mutable JSON trees.
 3. `cli.py` maps files/stdin and exit codes onto the model and runner. `init` is the only
    command that writes a file and uses exclusive creation.
 4. `__init__.py` exposes the deliberately small Python API; `__main__.py` and the console

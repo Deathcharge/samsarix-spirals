@@ -1,0 +1,283 @@
+{
+  "benchmark_version": 1,
+  "started_at": "2026-08-31T13:24:09.451399+00:00",
+  "source_sha256": "82b2e9d41c62d30c87478aa37df837e1fa6486ba28262fbd237a4804f76c5d07",
+  "product": "samsarix-spirals 0.1.0",
+  "environment": {
+    "python": "3.14.7",
+    "implementation": "CPython",
+    "system": "Windows",
+    "release": "11",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+    "logical_cpus": 8
+  },
+  "sample_count": 5,
+  "child_timeout_seconds": 60,
+  "startup_ns": {
+    "samples": [
+      387541700,
+      445225200,
+      376411400,
+      370570100,
+      528905500
+    ],
+    "min": 370570100,
+    "median": 387541700,
+    "max": 528905500
+  },
+  "measurements": [
+    {
+      "scenario": "trace_100_steps",
+      "samples": [
+        {
+          "setup_ns": 4582100,
+          "elapsed_ns": 1063777000,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 47513600,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100
+          }
+        },
+        {
+          "setup_ns": 2394100,
+          "elapsed_ns": 895579900,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 47579136,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100
+          }
+        },
+        {
+          "setup_ns": 1980500,
+          "elapsed_ns": 868246100,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 47497216,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100
+          }
+        },
+        {
+          "setup_ns": 2154900,
+          "elapsed_ns": 773764600,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 47669248,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100
+          }
+        },
+        {
+          "setup_ns": 2134600,
+          "elapsed_ns": 755895300,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 47579136,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100
+          }
+        }
+      ],
+      "elapsed_ns": {
+        "min": 755895300,
+        "median": 868246100,
+        "max": 1063777000
+      },
+      "units_per_second": 1.1517471832007078,
+      "allocation_sample": {
+        "python_allocation_peak_bytes": 20038639,
+        "outcome": {
+          "completed_steps": 100
+        }
+      }
+    },
+    {
+      "scenario": "trace_100_steps_json",
+      "samples": [
+        {
+          "setup_ns": 2127300,
+          "elapsed_ns": 1166403000,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 70361088,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100,
+            "serialized_bytes": 1613373
+          }
+        },
+        {
+          "setup_ns": 4458800,
+          "elapsed_ns": 1374922600,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 70889472,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100,
+            "serialized_bytes": 1613373
+          }
+        },
+        {
+          "setup_ns": 5277200,
+          "elapsed_ns": 2186750300,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 70336512,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100,
+            "serialized_bytes": 1613373
+          }
+        },
+        {
+          "setup_ns": 5852800,
+          "elapsed_ns": 2602489600,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 70316032,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100,
+            "serialized_bytes": 1613373
+          }
+        },
+        {
+          "setup_ns": 5227400,
+          "elapsed_ns": 1498695900,
+          "units": 1,
+          "unit": "runs",
+          "resident_peak": {
+            "bytes": 70250496,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "completed_steps": 100,
+            "serialized_bytes": 1613373
+          }
+        }
+      ],
+      "elapsed_ns": {
+        "min": 1166403000,
+        "median": 1498695900,
+        "max": 2602489600
+      },
+      "units_per_second": 0.6672467710093822,
+      "allocation_sample": {
+        "python_allocation_peak_bytes": 41270791,
+        "outcome": {
+          "completed_steps": 100,
+          "serialized_bytes": 1613373
+        }
+      }
+    },
+    {
+      "scenario": "suite_1000",
+      "samples": [
+        {
+          "setup_ns": 28075300,
+          "elapsed_ns": 168581200,
+          "units": 1000,
+          "unit": "cases",
+          "resident_peak": {
+            "bytes": 28233728,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "passed_cases": 1000
+          }
+        },
+        {
+          "setup_ns": 30243900,
+          "elapsed_ns": 202673600,
+          "units": 1000,
+          "unit": "cases",
+          "resident_peak": {
+            "bytes": 28471296,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "passed_cases": 1000
+          }
+        },
+        {
+          "setup_ns": 37946900,
+          "elapsed_ns": 251171400,
+          "units": 1000,
+          "unit": "cases",
+          "resident_peak": {
+            "bytes": 28377088,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "passed_cases": 1000
+          }
+        },
+        {
+          "setup_ns": 32094500,
+          "elapsed_ns": 166980700,
+          "units": 1000,
+          "unit": "cases",
+          "resident_peak": {
+            "bytes": 28372992,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "passed_cases": 1000
+          }
+        },
+        {
+          "setup_ns": 35338900,
+          "elapsed_ns": 313920700,
+          "units": 1000,
+          "unit": "cases",
+          "resident_peak": {
+            "bytes": 28258304,
+            "method": "windows_peak_working_set"
+          },
+          "outcome": {
+            "passed_cases": 1000
+          }
+        }
+      ],
+      "elapsed_ns": {
+        "min": 166980700,
+        "median": 202673600,
+        "max": 313920700
+      },
+      "units_per_second": 4934.041730151337,
+      "allocation_sample": {
+        "python_allocation_peak_bytes": 1181534,
+        "outcome": {
+          "passed_cases": 1000
+        }
+      }
+    }
+  ]
+}

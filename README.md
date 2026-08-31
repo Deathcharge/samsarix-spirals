@@ -16,12 +16,14 @@ on PyPI, so install it from a checkout or a locally built wheel.
 - Renders values from `input`, `defaults`, and completed `steps`, with scoped `item`
   references inside list transformations.
 - Emits deterministic JSON with no timestamps, random IDs, or hidden state.
-- Performs no network requests, subprocess execution, credential storage, or imports
+- The workflow runner performs no network requests, subprocess execution, credential storage, or imports
   from another Samsarix repository.
 
 Samsarix Spirals is not a Zapier, n8n, Temporal, Prefect, Dagster, Dagger, or CUE
-replacement. Its advantage is a deliberately small, hermetic contract surface: no UI,
-server, scheduler, connectors, code execution, network access, or persistence.
+replacement. Its workflow execution surface has no UI, server, scheduler, connectors,
+code execution, network access, or persistence. Explicit CLI file loading/`init`, package
+installation, Action provisioning, and maintainer build/benchmark tools use separate
+caller-authorized filesystem, process, or network capabilities.
 
 ## Install from a checkout
 

@@ -193,6 +193,7 @@ for Unicode, repeated-output, and memory-limit details.
 ## Documentation
 
 - [Pinned GitHub Action and pre-commit integration](docs/REPOSITORY_INTEGRATIONS.md)
+- [Resource measurements and operating guidance](docs/PERFORMANCE.md)
 - [Workflow format](docs/WORKFLOW_FORMAT.md)
 - [Compatibility and deprecation policy](docs/COMPATIBILITY.md)
 - [Competitive position and use cases](docs/COMPETITIVE_POSITIONING.md)

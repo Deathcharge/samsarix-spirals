@@ -20,13 +20,15 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # Exercise the documented historical pin as well as HEAD.
       - name: Passing suite
         uses: ./
         with:
           workflow: examples/release-targets.json
           suite: examples/release-targets.suite.json
       - name: Pinned public Action consumer
-        uses: Deathcharge/samsarix-spirals@13e4858b7c240c372c281f3ec231003042f8787c
+        uses: Deathcharge/samsarix-spirals@4ef5f51ef12778a72825b2c687028454d5fd3858
         with:
           workflow: examples/release-targets.json
           suite: examples/release-targets.suite.json
@@ -46,6 +48,9 @@ jobs:
       - run: python -m pre_commit validate-manifest .pre-commit-hooks.yaml
         shell: bash
       - run: python tests/integration_smoke.py
+        shell: bash
+      - name: Verify documented pre-commit pin and failure diagnostics
+        run: python tests/integration_smoke.py --documented-pin
         shell: bash
       - name: Verify resource measurement harness (no speed threshold)
         run: python -I tools/benchmark.py --samples 1

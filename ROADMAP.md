@@ -61,7 +61,9 @@ this boundary.
 
 - [x] Ship a pinned GitHub Action and documented pre-commit integration.
 - [x] Add escaped, bounded case-failure annotations for GitHub Actions.
-- Add stable SARIF or annotation output for step-scoped failures.
+- [x] Add stable failure codes and actual step IDs to JSON, JUnit and CI annotations.
+- Defer SARIF until a consumer needs code-scanning ingestion; step IDs are not source locations.
+- [x] Verify repeatable candidate wheel builds with pinned tools and retained unsigned hashes.
 - Publish signed distributions and an SBOM through an owned package-index account.
 - [x] Add reproducible startup, suite-throughput, allocation and OS peak-memory probes.
 - Extend resource measurements to combined limits and opt-in maximum-step workloads;
@@ -75,6 +77,9 @@ this boundary.
 - Provide a rollback-tested release and incident process.
 
 ## Adoption gates
+
+Use the [evaluation guide](docs/EVALUATION.md) and optional evaluation report template to
+collect evidence. The guide and automated synthetic consumers are preparation, not adoption.
 
 Do not describe Samsarix Spirals as production-ready until evidence shows:
 

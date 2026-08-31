@@ -97,7 +97,7 @@ class Workflow:
         _validate_json_value(raw_defaults, "$.defaults", issues)
         defaults_valid = not any(issue.startswith("$.defaults") for issue in issues)
         defaults = (
-            cast(dict[str, JsonValue], copy.deepcopy(dict(raw_defaults))) if defaults_valid else {}
+            cast(dict[str, JsonValue], _copy_json_value(raw_defaults)) if defaults_valid else {}
         )
 
         raw_steps = document.get("steps")
@@ -140,7 +140,7 @@ class Workflow:
             argument_issue_count = len(issues)
             _validate_json_value(raw_arguments, f"{path}.with", issues)
             arguments = (
-                cast(dict[str, JsonValue], copy.deepcopy(dict(raw_arguments)))
+                cast(dict[str, JsonValue], _copy_json_value(raw_arguments))
                 if len(issues) == argument_issue_count
                 else {}
             )
@@ -163,7 +163,7 @@ class Workflow:
             if len(issues) == output_issue_count:
                 _validate_templates(raw_output, "$.output", seen_ids, defaults, issues)
             output_valid = len(issues) == output_issue_count
-        output = cast(JsonValue, copy.deepcopy(raw_output)) if output_valid else None
+        output = _copy_json_value(raw_output) if output_valid else None
 
         if issues:
             raise WorkflowValidationError(issues)
@@ -227,7 +227,7 @@ def parse_json_object_bytes(data: bytes, *, source: str = "<memory>") -> dict[st
     _validate_json_value(document, "$", issues)
     if issues:
         raise WorkflowValidationError(f"{source}: {issue}" for issue in issues)
-    return cast(dict[str, JsonValue], copy.deepcopy(dict(document)))
+    return cast(dict[str, JsonValue], _copy_json_value(document))
 
 
 def validate_input_object(document: Mapping[str, object]) -> dict[str, JsonValue]:
@@ -236,7 +236,7 @@ def validate_input_object(document: Mapping[str, object]) -> dict[str, JsonValue
     _validate_json_value(document, "$", issues)
     if issues:
         raise WorkflowValidationError(issues)
-    return cast(dict[str, JsonValue], copy.deepcopy(dict(document)))
+    return cast(dict[str, JsonValue], _copy_json_value(document))
 
 
 def validate_json_value(value: object) -> JsonValue:
@@ -245,7 +245,16 @@ def validate_json_value(value: object) -> JsonValue:
     _validate_json_value(value, "$", issues)
     if issues:
         raise WorkflowValidationError(issues)
-    return cast(JsonValue, copy.deepcopy(value))
+    return _copy_json_value(value)
+
+
+def _copy_json_value(value: object) -> JsonValue:
+    """Detach validated data into the renderer's concrete JSON container types."""
+    if isinstance(value, Mapping):
+        return {key: _copy_json_value(child) for key, child in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_copy_json_value(child) for child in value]
+    return cast(JsonValue, value)
 
 
 def _read_bounded(path: Path) -> bytes:

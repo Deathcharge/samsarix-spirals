@@ -72,10 +72,38 @@ results still succeed. A further case verifies merged objects cannot exceed the 
 unreachable. Local pytest after this follow-up: 164 passed, 3 intentional schema skips,
 96.83% coverage on Python 3.14.7.
 
-Remaining resource work is explicit: per-tree depth/value/string caps and step limits
-are not a measured process-memory or total serialized-byte budget. Verify aggregate
-retained-output and serialized-size behavior before claiming suitability for hostile,
-multi-tenant execution; no such deployment capability or claim exists in this checkout.
+### Follow-up: aggregate encoded payload budgets
+
+A bounded reproduction used a 1,111-byte workflow and 100,012-byte input to produce
+a 5,000,161-byte step payload and 10,000,456-byte full compact result. Each string was
+within the existing character limit; repeated placeholders bypassed any practical
+aggregate size control. Accepted API tuples also bypassed list traversal. The initial
+24 regression cases failed before the fix (after shortening oversized pytest case IDs).
+
+The shared renderer now incrementally enforces a 4 MiB compact ASCII-escaped JSON
+budget for arguments/final values. The runner counts retained step outputs and final
+output against 16 MiB before returning a result, including the implicit final copy.
+Validated API mappings/tuples normalize consistently across workflow, input, and suite
+factories. Oversized integer conversion failures retain execution-error semantics.
+This is an intentional resource-exhaustion tightening under the compatibility policy;
+oversized users must reduce payloads or split batches, not disable accounting.
+
+Tests cover all operations, all CLI output modes, literal/exact/interpolated text,
+Unicode and escaped keys, scalar/punctuation boundaries, per-run resets, tuple-backed
+suite expectations, and explicit/implicit final values. Local full pytest: 199 passed,
+3 intentional schema skips, 97.03% coverage on Python 3.14.7. Fresh-wheel smoke checks
+also exercise per-render and cumulative failures with empty stdout. Exact final artifact
+and hosted CI outcomes are recorded in the milestone PR.
+
+The accounting choice follows [Python's JSON encoder contract](https://docs.python.org/3/library/json.html):
+ASCII escaping gives a deterministic encoding measure, while fragment iteration avoids
+allocating a second full encoded result just to measure it. No runtime dependency added.
+
+Remaining resource work is explicit: encoded payload budgets are not measured process
+memory, wall-clock deadlines, or exact pretty-printed stdout limits. Metadata, temporary
+copies, interpreter overhead, and caller-owned/mutated API objects are outside the
+payload measure. Hostile multi-tenant hosting remains unsupported; retain independent
+security review and measured workload/resource validation as release gates.
 
 Sustainability hypothesis (not validated demand): keep the MPL-covered local runner
 usable without an account; offer optional workflow migration, integration assistance,

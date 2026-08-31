@@ -12,6 +12,15 @@ use semantic versioning while the public API remains pre-1.0.
 
 ### Fixed
 
+- Resource-exhaustion hardening: rendered arguments/final values now have a 4 MiB
+  encoded-payload cap, and retained step outputs plus final output have a combined
+  16 MiB cap. Accounting includes JSON escaping and repeated copies. Previously valid
+  amplification-heavy workflows may now fail with an execution error; reduce payloads
+  or split batches. See the workflow format for the exact accounting contract.
+- API factories normalize accepted nested tuples and mappings into JSON arrays/objects,
+  closing an alternate representation that bypassed renderer traversal. Suite expectations
+  use the same normalization. Integers that cannot be rendered under Python's conversion
+  limit fail with an attributed execution error rather than a raw encoder exception.
 - Template expansion now accounts for the surrounding tree's depth when cloning an
   input or prior-step value. Individually valid trees can no longer compose into results
   exceeding the documented nesting limit, including explicit final output templates.

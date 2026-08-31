@@ -8,6 +8,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
@@ -66,7 +67,41 @@ def main() -> None:
         report = invoke("test", str(workflow_path), str(suite_path), "--json", "--compact")
         if report.returncode != 0 or report.stderr or not json.loads(report.stdout)["successful"]:
             raise RuntimeError(f"Installed CLI suite failed: {suite_path.name}")
-    print(f"Installed CLI boundaries and {len(suite_paths)} example suites passed")
+    with TemporaryDirectory(prefix="samsarix-budget-smoke-") as directory:
+        path = Path(directory) / "budget.json"
+        for count, steps, message in [(50, 1, "rendered value"), (30, 6, "combined output")]:
+            document = {
+                "schema_version": 1,
+                "name": "budget-smoke",
+                "steps": [
+                    {
+                        "id": f"expand{i}",
+                        "uses": "set",
+                        "with": {
+                            "items": ["{{ input.text }}"] * count,
+                        },
+                    }
+                    for i in range(steps)
+                ],
+            }
+            path.write_text(json.dumps(document), encoding="utf-8")
+            oversized = invoke(
+                "run",
+                str(path),
+                "--input",
+                "-",
+                "--output-only",
+                "--compact",
+                input_text=json.dumps({"text": "x" * 100_000}),
+            )
+            if (
+                oversized.returncode != 1
+                or oversized.stdout
+                or message not in oversized.stderr
+                or "byte limit" not in oversized.stderr
+            ):
+                raise RuntimeError(f"Installed CLI did not enforce {message} byte budget")
+    print(f"Installed CLI boundaries, byte budgets, and {len(suite_paths)} example suites passed")
 
 
 if __name__ == "__main__":

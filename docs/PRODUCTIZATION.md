@@ -44,8 +44,32 @@ publisher authentication. Python/pip/OS are not locked; this is a same-environme
 repeatability check, not a hermetic build or signed provenance. Package publication,
 signing, ownership confirmation, and independent-user validation remain external gates.
 
-Verification for this milestone is in progress; actual local and hosted outcomes will
-be recorded after building from the committed implementation. No publication occurred.
+Local verification on Windows CPython 3.14.7, implementation commit `27a26db`:
+
+- `python -m pytest -q`: **361 passed, four intentional input-schema skips, 97.40%**
+  runtime branch coverage; 30 of these tests exercise maintainer release-tool boundaries.
+- `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy`
+  (16 source files), `python -m bandit -q -r src`,
+  `python -m bandit -q tools/release_check.py`, and
+  `python -m compileall -q src tests tools`: passed.
+- `python -m pip_audit -r requirements/build.lock`: no known vulnerabilities reported.
+- Fresh `python -m venv` and builder `python -m pip install --require-hashes
+  --only-binary=:all: -r requirements/build.lock`: all six pinned wheels installed.
+- Builder `python -I tools/release_check.py --output-dir <new external directory>`:
+  passed dependency consistency, both sdist-to-wheel builds, identical wheel bytes,
+  isolated installed CLI boundary checks and all four example suites. Source archive
+  bytes differed (`sdist_bytes_identical: false`), with no claim otherwise.
+- `python -m twine check <candidate>/*.whl <candidate>/*.tar.gz`: both passed. Use
+  distribution-only patterns: a trial `candidate/*` also included the JSON evidence,
+  correctly rejected by Twine as a non-distribution.
+- Candidate wheel: 36,915 bytes, SHA-256
+  `7f1095eb9c8772eb595bf2ea803a0746b304fe0bfd17a62bfb5eacda15ea9f8d`.
+  These bytes identify this local environment/commit only, not future release artifacts.
+
+Hosted results for the exact PR and eventual merged commit are tracked in
+[PR #23](https://github.com/Deathcharge/samsarix-spirals/pull/23); they must be observed
+green before release. No publication occurred. Publisher authentication and independent
+adoption evidence remain the next gates, not further expansion of the pure runner.
 
 ## 2026-08-31 revalidation and contract-boundary corrections
 

@@ -29,7 +29,8 @@ DEFAULT_MAX_RUN_STEPS = 100
 
 STEP_ID_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
 TEMPLATE_PATTERN = re.compile(r"{{\s*([A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_-]+)*)\s*}}")
-SUPPORTED_OPERATIONS = frozenset({"assert", "merge", "pick", "set"})
+SUPPORTED_OPERATIONS = frozenset({"assert", "filter", "map", "merge", "normalize", "pick", "set"})
+STRING_TRANSFORMS = frozenset({"trim", "ascii_lower", "ascii_upper"})
 ASSERT_OPERATORS = frozenset(
     {
         "contains",
@@ -146,12 +147,25 @@ class Workflow:
             )
 
             if uses == "assert":
-                _validate_assert(arguments, path, issues)
+                _validate_assert(arguments, f"{path}.with", issues)
             elif uses == "merge":
                 _validate_merge(arguments, path, issues)
             elif uses == "pick":
                 _validate_pick(arguments, path, issues)
-            _validate_templates(arguments, f"{path}.with", seen_ids - {step_id}, defaults, issues)
+            elif uses in {"map", "filter"}:
+                _validate_collection(arguments, uses, path, issues)
+            elif uses == "normalize":
+                _validate_normalize(arguments, path, issues)
+            for key, value in arguments.items():
+                _validate_templates(
+                    value,
+                    f"{path}.with.{key}",
+                    seen_ids - {step_id},
+                    defaults,
+                    issues,
+                    allow_item=(uses == "map" and key == "template")
+                    or (uses == "filter" and key == "where"),
+                )
             steps.append(Step(id=step_id, uses=uses, arguments=arguments))
 
         output_defined = "output" in document
@@ -383,13 +397,13 @@ def _validate_json_value(
 
 def _validate_assert(arguments: dict[str, JsonValue], path: str, issues: list[str]) -> None:
     allowed = {"expected", "message", "operator", "value"}
-    _reject_unknown_keys(arguments, allowed, f"{path}.with", issues)
+    _reject_unknown_keys(arguments, allowed, path, issues)
     if "value" not in arguments:
-        issues.append(f"{path}.with.value is required for assert")
+        issues.append(f"{path}.value is required for assert")
     operator = arguments.get("operator")
     if not isinstance(operator, str) or operator not in ASSERT_OPERATORS:
         choices = ", ".join(sorted(ASSERT_OPERATORS))
-        issues.append(f"{path}.with.operator must be one of: {choices}")
+        issues.append(f"{path}.operator must be one of: {choices}")
     elif (
         operator
         in {
@@ -403,10 +417,10 @@ def _validate_assert(arguments: dict[str, JsonValue], path: str, issues: list[st
         }
         and "expected" not in arguments
     ):
-        issues.append(f"{path}.with.expected is required for operator {operator!r}")
+        issues.append(f"{path}.expected is required for operator {operator!r}")
     message = arguments.get("message")
     if message is not None and not isinstance(message, str):
-        issues.append(f"{path}.with.message must be a string")
+        issues.append(f"{path}.message must be a string")
 
 
 def _validate_merge(arguments: dict[str, JsonValue], path: str, issues: list[str]) -> None:
@@ -457,12 +471,59 @@ def _validate_pick(arguments: dict[str, JsonValue], path: str, issues: list[str]
         issues.append(f"{path}.with.required must be a boolean or exact template")
 
 
+def _validate_collection(
+    arguments: dict[str, JsonValue], uses: str, path: str, issues: list[str]
+) -> None:
+    body = "template" if uses == "map" else "where"
+    _reject_unknown_keys(arguments, {"items", body}, f"{path}.with", issues)
+    if "items" not in arguments:
+        issues.append(f"{path}.with.items is required for {uses}")
+    else:
+        items = arguments["items"]
+        if not isinstance(items, list) and not (
+            isinstance(items, str) and TEMPLATE_PATTERN.fullmatch(items)
+        ):
+            issues.append(f"{path}.with.items must be an array or exact template")
+    if body not in arguments:
+        issues.append(f"{path}.with.{body} is required for {uses}")
+    elif uses == "filter":
+        predicate = arguments[body]
+        if not isinstance(predicate, dict):
+            issues.append(f"{path}.with.where must be an object")
+        else:
+            _reject_unknown_keys(
+                predicate, {"value", "operator", "expected"}, f"{path}.with.where", issues
+            )
+            _validate_assert(predicate, f"{path}.with.where", issues)
+
+
+def _validate_normalize(arguments: dict[str, JsonValue], path: str, issues: list[str]) -> None:
+    _reject_unknown_keys(arguments, {"value", "transforms"}, f"{path}.with", issues)
+    if "value" not in arguments:
+        issues.append(f"{path}.with.value is required for normalize")
+    elif not isinstance(arguments["value"], (str, list)):
+        issues.append(f"{path}.with.value must be a string, string array, or exact template")
+    elif isinstance(arguments["value"], list) and any(
+        not isinstance(item, str) for item in arguments["value"]
+    ):
+        issues.append(f"{path}.with.value array entries must be strings")
+    transforms = arguments.get("transforms")
+    if not isinstance(transforms, list) or not 1 <= len(transforms) <= 3:
+        issues.append(f"{path}.with.transforms must contain 1 to 3 literal transform names")
+    elif any(not isinstance(item, str) or item not in STRING_TRANSFORMS for item in transforms):
+        issues.append(
+            f"{path}.with.transforms supports only {', '.join(sorted(STRING_TRANSFORMS))}"
+        )
+
+
 def _validate_templates(
     value: object,
     path: str,
     available_steps: set[str],
     defaults: Mapping[str, JsonValue],
     issues: list[str],
+    *,
+    allow_item: bool = False,
 ) -> None:
     if isinstance(value, str):
         remainder = TEMPLATE_PATTERN.sub("", value)
@@ -471,6 +532,8 @@ def _validate_templates(
         for match in TEMPLATE_PATTERN.finditer(value):
             segments = match.group(1).split(".")
             root = segments[0]
+            if root == "item" and allow_item:
+                continue
             if root not in {"defaults", "input", "steps"}:
                 issues.append(f"{path} uses unsupported template root {root!r}")
             elif root == "steps":
@@ -482,7 +545,11 @@ def _validate_templates(
                 issues.append(f"{path} references missing default {segments[1]!r}")
     elif isinstance(value, Mapping):
         for key, child in value.items():
-            _validate_templates(child, f"{path}.{key}", available_steps, defaults, issues)
+            _validate_templates(
+                child, f"{path}.{key}", available_steps, defaults, issues, allow_item=allow_item
+            )
     elif isinstance(value, (list, tuple)):
         for index, child in enumerate(value):
-            _validate_templates(child, f"{path}[{index}]", available_steps, defaults, issues)
+            _validate_templates(
+                child, f"{path}[{index}]", available_steps, defaults, issues, allow_item=allow_item
+            )

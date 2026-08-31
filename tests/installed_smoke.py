@@ -67,6 +67,26 @@ def main() -> None:
         report = invoke("test", str(workflow_path), str(suite_path), "--json", "--compact")
         if report.returncode != 0 or report.stderr or not json.loads(report.stdout)["successful"]:
             raise RuntimeError(f"Installed CLI suite failed: {suite_path.name}")
+
+    targets = invoke(
+        "run",
+        str(EXAMPLES / "release-targets.json"),
+        "--input",
+        str(EXAMPLES / "release-targets.input.json"),
+        "--output-only",
+        "--compact",
+    )
+    if (
+        targets.returncode != 0
+        or targets.stderr
+        or json.loads(targets.stdout) != ["linux-x64", "windows-x64"]
+    ):
+        raise RuntimeError("Installed CLI release-target batch contract failed")
+    explanation = invoke("explain", str(EXAMPLES / "release-targets.json"), "--compact")
+    if explanation.returncode != 0 or explanation.stderr:
+        raise RuntimeError("Installed CLI could not explain the release-target workflow")
+    if json.loads(explanation.stdout)["steps"][1].get("item_paths") != ["item.name"]:
+        raise RuntimeError("Installed CLI omitted scoped item paths")
     with TemporaryDirectory(prefix="samsarix-budget-smoke-") as directory:
         path = Path(directory) / "budget.json"
         for count, steps, message in [(50, 1, "rendered value"), (30, 6, "combined output")]:

@@ -29,6 +29,8 @@ from .model import (
 MAX_RENDERED_BYTES = 4 * 1_048_576
 MAX_RUN_OUTPUT_BYTES = 16 * 1_048_576
 _SIZE_ENCODER = json.JSONEncoder(ensure_ascii=True, allow_nan=False, separators=(",", ":"))
+_ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+_ASCII_UPPER = str.maketrans("abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 
 @dataclass(slots=True)
@@ -97,12 +99,15 @@ def run_workflow(
     remaining_output_bytes = MAX_RUN_OUTPUT_BYTES
 
     for step in workflow.steps:
-        rendered = _render(step.arguments, context, step_id=step.id)
-        if not isinstance(rendered, dict):  # pragma: no cover - validated model invariant
-            raise WorkflowExecutionError(
-                "step arguments did not render to an object", step_id=step.id
-            )
-        output = _execute_step(step, rendered)
+        if step.uses in {"map", "filter"}:
+            output = _execute_collection_step(step, context)
+        else:
+            rendered = _render(step.arguments, context, step_id=step.id)
+            if not isinstance(rendered, dict):  # pragma: no cover - validated model invariant
+                raise WorkflowExecutionError(
+                    "step arguments did not render to an object", step_id=step.id
+                )
+            output = _execute_step(step, rendered)
         remaining_output_bytes = _consume_output_bytes(
             output, remaining_output_bytes, step_id=step.id
         )
@@ -124,6 +129,8 @@ def _execute_step(step: Step, arguments: dict[str, JsonValue]) -> JsonValue:
         return _merge_objects(arguments, step_id=step.id)
     if step.uses == "pick":
         return _pick_keys(arguments, step_id=step.id)
+    if step.uses == "normalize":
+        return _normalize_strings(arguments, step_id=step.id)
     if step.uses == "assert":
         value = arguments.get("value")
         expected = arguments.get("expected")
@@ -148,6 +155,78 @@ def _execute_step(step: Step, arguments: dict[str, JsonValue]) -> JsonValue:
     raise WorkflowExecutionError(  # pragma: no cover - validated model invariant
         f"unsupported operation {step.uses!r}", step_id=step.id
     )
+
+
+def _execute_collection_step(step: Step, context: Mapping[str, JsonValue]) -> JsonValue:
+    items = _render(step.arguments["items"], context, step_id=step.id)
+    if not isinstance(items, list):
+        raise WorkflowExecutionError(f"{step.uses} items must render to an array", step_id=step.id)
+    output: list[JsonValue] = []
+    output_budget = _RenderBudget()
+    predicate_budget = _RenderBudget()
+    # The array itself and all its elements share one budget, not one per item.
+    _consume_value(output_budget, [], step_id=step.id)
+    for index, item in enumerate(items):
+        item_context = {**context, "item": item}
+        try:
+            if step.uses == "filter":
+                predicate = _render(
+                    step.arguments["where"], item_context, step_id=step.id, budget=predicate_budget
+                )
+                if not isinstance(predicate, dict):  # pragma: no cover - validated invariant
+                    raise WorkflowExecutionError("filter where must be an object", step_id=step.id)
+                operator = predicate["operator"]
+                if not isinstance(operator, str):  # pragma: no cover - validated invariant
+                    raise WorkflowExecutionError(
+                        "filter operator must be a string", step_id=step.id
+                    )
+                try:
+                    keep = _evaluate_assertion(
+                        predicate["value"], operator, predicate.get("expected")
+                    )
+                except TypeError as error:
+                    raise WorkflowExecutionError(str(error), step_id=step.id) from error
+                if not keep:
+                    continue
+            if output:
+                _consume_render_bytes(output_budget, 1, step_id=step.id)
+            if step.uses == "map":
+                mapped = _render(
+                    step.arguments["template"],
+                    item_context,
+                    step_id=step.id,
+                    budget=output_budget,
+                    depth=1,
+                )
+            else:
+                mapped = _clone_with_budget(item, output_budget, step_id=step.id, depth=1)
+            output.append(mapped)
+        except WorkflowExecutionError as error:
+            raise WorkflowExecutionError(f"item[{index}]: {error}", step_id=step.id) from error
+    return output
+
+
+def _normalize_strings(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValue:
+    value = arguments["value"]
+    transforms = arguments["transforms"]
+    if not isinstance(transforms, list):  # pragma: no cover - validated invariant
+        raise WorkflowExecutionError("normalize transforms must be an array", step_id=step_id)
+
+    def normalize(text: JsonValue, location: str) -> str:
+        if not isinstance(text, str):
+            raise WorkflowExecutionError(f"normalize {location} must be a string", step_id=step_id)
+        for transform in transforms:
+            if transform == "trim":
+                text = text.strip(" \t\r\n\v\f")
+            elif transform == "ascii_lower":
+                text = text.translate(_ASCII_LOWER)
+            else:  # ascii_upper; validated literal transform names
+                text = text.translate(_ASCII_UPPER)
+        return text
+
+    if isinstance(value, list):
+        return [normalize(item, f"value[{index}]") for index, item in enumerate(value)]
+    return normalize(value, "value")
 
 
 def _merge_objects(arguments: dict[str, JsonValue], *, step_id: str) -> JsonValue:

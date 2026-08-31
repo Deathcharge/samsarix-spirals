@@ -48,7 +48,7 @@ this boundary.
 
 - [x] Add bounded shallow object merge and explicit top-level key selection without
   arbitrary expressions.
-- [ ] Add bounded list mapping, filtering, and string normalization without arbitrary
+- [x] Add bounded list mapping, filtering, and ASCII string normalization without arbitrary
   expressions.
 - [x] Add an `explain` command that shows dependencies and referenced input paths without
   executing the workflow.

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "name": "release-targets",
+  "description": "Select enabled release targets and emit normalized target names for a later CI job.",
+  "steps": [
+    {
+      "id": "enabled",
+      "uses": "filter",
+      "with": {
+        "items": "{{ input.targets }}",
+        "where": {"value": "{{ item.enabled }}", "operator": "equals", "expected": true}
+      }
+    },
+    {
+      "id": "names",
+      "uses": "map",
+      "with": {"items": "{{ steps.enabled }}", "template": "{{ item.name }}"}
+    },
+    {
+      "id": "normalized",
+      "uses": "normalize",
+      "with": {"value": "{{ steps.names }}", "transforms": ["trim", "ascii_lower"]}
+    }
+  ],
+  "output": "{{ steps.normalized }}"
+}

@@ -1,0 +1,29 @@
+name: Samsarix Spirals contract suite
+description: Run a bounded JSON workflow regression suite without executing consumer code
+author: Samsarix LLC
+branding:
+  icon: check-circle
+  color: purple
+inputs:
+  workflow:
+    description: Path to the workflow JSON in the checked-out consumer workspace
+    required: true
+  suite:
+    description: Path to the regression-suite JSON in the checked-out consumer workspace
+    required: true
+  python-version:
+    description: Python version for the runner (3.11 or newer)
+    default: '3.13'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Check workflow contract
+      shell: bash
+      env:
+        SAMSARIX_ACTION_PATH: ${{ github.action_path }}
+        SAMSARIX_WORKFLOW: ${{ inputs.workflow }}
+        SAMSARIX_SUITE: ${{ inputs.suite }}
+      run: python -I "$SAMSARIX_ACTION_PATH/integrations/run_action.py"

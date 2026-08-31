@@ -47,6 +47,7 @@ dev = [
 
 [project.scripts]
 samsarix-spirals = "samsarix_spirals.cli:main"
+samsarix-spirals-ci = "samsarix_spirals.ci:main"
 
 [project.urls]
 Repository = "https://github.com/Deathcharge/samsarix-spirals"

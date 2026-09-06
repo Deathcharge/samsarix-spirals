@@ -28,7 +28,7 @@ jobs:
           workflow: examples/release-targets.json
           suite: examples/release-targets.suite.json
       - name: Pinned public Action consumer
-        uses: Deathcharge/samsarix-spirals@4ef5f51ef12778a72825b2c687028454d5fd3858
+        uses: Deathcharge/samsarix-spirals@b8ac36385033e645b56dd87ea6fd28801909c538
         with:
           workflow: examples/release-targets.json
           suite: examples/release-targets.suite.json
